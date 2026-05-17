@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Astana POI Explorer</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { margin: 0; font-family: -apple-system, system-ui, sans-serif; }
+        #map { height: 100vh; }
+        #panel {
+            position: absolute; top: 10px; left: 50px; z-index: 1000;
+            background: white; padding: 12px 16px; border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            font-size: 14px; min-width: 220px;
+        }
+        #panel label { display: block; margin: 6px 0; }
+        #panel input, #panel select { width: 140px; padding: 4px; }
+        #panel button {
+            margin-top: 8px; padding: 6px 12px; cursor: pointer;
+            background: #1e88e5; color: white; border: none; border-radius: 4px;
+        }
+        #status { margin-top: 8px; color: #666; font-size: 12px; }
+        .hint { color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+<div id="panel">
+    <strong>Astana POI Explorer</strong>
+    <div class="hint">Click anywhere on the map to search.</div>
+    <label>Radius (m): <input type="number" id="radius" value="500" min="50" max="10000" /></label>
+    <label>Subtype:
+        <select id="subtype">
+            <option value="">any</option>
+            <option>restaurant</option><option>cafe</option><option>bar</option>
+            <option>fast_food</option><option>pharmacy</option><option>bank</option>
+            <option>atm</option><option>attraction</option><option>museum</option>
+            <option>hotel</option><option>viewpoint</option><option>guest_house</option>
+        </select>
+    </label>
+    <div id="status">Click the map to start.</div>
+</div>
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    const map = L.map('map').setView([51.1283, 71.4276], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap',
+    }).addTo(map);
+
+    L.marker([51.1283, 71.4276]).addTo(map).bindPopup('Baiterek Tower');
+
+    const poiLayer = L.layerGroup().addTo(map);
+    let circleLayer = null;
+
+    async function search(lat, lon) {
+        const radius = document.getElementById('radius').value;
+        const subtype = document.getElementById('subtype').value;
+        const status = document.getElementById('status');
+
+        const params = new URLSearchParams({ lat, lon, radius_m: radius, limit: 200 });
+        if (subtype) params.append('subtype', subtype);
+
+        status.textContent = 'Searching…';
+        const t0 = performance.now();
+        const res = await fetch('/api/nearby?' + params);
+        const data = await res.json();
+        const t1 = performance.now();
+
+        poiLayer.clearLayers();
+        if (circleLayer) map.removeLayer(circleLayer);
+        circleLayer = L.circle([lat, lon], {
+            radius: parseFloat(radius),
+            color: '#1e88e5', weight: 1, fillOpacity: 0.05,
+        }).addTo(map);
+
+        data.results.forEach(r => {
+            const [x, y] = r.geometry.coordinates;
+            L.circleMarker([y, x], { radius: 5, color: '#e53935', fillOpacity: 0.7 })
+                .bindPopup(`<b>${r.name || '(unnamed)'}</b><br>${r.subtype}<br>${r.distance_m} m away`)
+                .addTo(poiLayer);
+        });
+
+        status.textContent = `${data.count} POIs · ${Math.round(t1 - t0)} ms`;
+    }
+
+    map.on('click', e => search(e.latlng.lat, e.latlng.lng));
+</script>
+</body>
+</html>

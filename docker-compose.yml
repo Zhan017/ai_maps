@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: map_project_db
+    environment:
+      POSTGRES_USER: zhan
+      POSTGRES_PASSWORD: zhan
+      POSTGRES_DB: gis
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
