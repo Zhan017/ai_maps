@@ -1,0 +1,80 @@
+{"id": "h01", "query": "quiet coffee with wifi for studying", "lat": 51.1283, "lng": 71.4276, "radius_m": 2000, "expected_category": "cafe", "tags": ["vibe", "amenity_wifi"], "notes": "vibe + amenity blend; should rank cozy/study-vibe cafes near center"}
+{"id": "h02", "query": "specialty coffee", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": "cafe", "tags": ["vibe"], "notes": "vibe query; matches 'specialty coffee' attribute"}
+{"id": "h03", "query": "cafe near baiterek", "lat": 51.1283, "lng": 71.4276, "radius_m": 800, "expected_category": "cafe", "tags": ["structured", "proximity"], "notes": "named-landmark proximity"}
+{"id": "h04", "query": "rooftop bar", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": "bar", "tags": ["vibe"], "notes": "matches 'rooftop' vibe attr on hotels/bars"}
+{"id": "h05", "query": "cocktail bar open late", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": "bar", "tags": ["vibe", "hours"], "notes": "vibe + temporal"}
+{"id": "h06", "query": "live music venue", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": "bar", "tags": ["vibe"], "notes": "matches 'live music' vibe"}
+{"id": "h07", "query": "kid-friendly museum", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": "museum", "tags": ["vibe"], "notes": "vibe + audience"}
+{"id": "h08", "query": "instagrammable spots near center", "lat": 51.1283, "lng": 71.4276, "radius_m": 2000, "expected_category": null, "tags": ["vibe", "agentic"], "notes": "cross-category — should surface attractions/viewpoints/cafes with 'instagrammable' vibe"}
+{"id": "h09", "query": "fine dining for a date night", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": "restaurant", "tags": ["vibe"], "notes": "matches 'date night' + 'fine dining' vibe attrs"}
+{"id": "h10", "query": "fast food open now", "lat": 51.1283, "lng": 71.4276, "radius_m": 1500, "expected_category": "fast_food", "tags": ["structured", "hours"], "notes": "structured category + open_now (set at runtime)"}
+{"id": "h11", "query": "24-hour pharmacy", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": "pharmacy", "tags": ["hours", "vibe"], "notes": "matches '24 hours nearby' vibe + pharmacy"}
+{"id": "h12", "query": "ATM near baiterek tower", "lat": 51.1283, "lng": 71.4276, "radius_m": 500, "expected_category": "atm", "tags": ["structured", "proximity"], "notes": "tight-radius proximity"}
+{"id": "h13", "query": "Halyk bank branch", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": "bank", "tags": ["structured", "exact_name"], "notes": "name match — real bank brand"}
+{"id": "h14", "query": "luxury hotel with spa", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": "hotel", "tags": ["vibe"], "notes": "matches 'luxury' + 'spa' vibe attrs"}
+{"id": "h15", "query": "budget guest house", "lat": 51.1283, "lng": 71.4276, "radius_m": 8000, "expected_category": "guest_house", "tags": ["vibe"], "notes": "matches 'budget friendly' vibe; sparser data"}
+{"id": "h16", "query": "scenic viewpoint at sunset", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": "viewpoint", "tags": ["vibe"], "notes": "matches 'scenic'/'sunset spot' vibe"}
+{"id": "h17", "query": "outdoor seating for summer", "lat": 51.1283, "lng": 71.4276, "radius_m": 2000, "expected_category": null, "tags": ["amenity_outdoor", "agentic"], "notes": "cross-category amenity filter"}
+{"id": "h18", "query": "vegan options near center", "lat": 51.1283, "lng": 71.4276, "radius_m": 2000, "expected_category": null, "tags": ["amenity", "agentic"], "notes": "matches vegan_options amenity"}
+{"id": "h19", "query": "pet friendly cafe", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": "cafe", "tags": ["amenity"], "notes": "matches pet_friendly amenity"}
+{"id": "h20", "query": "Coffee Like", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": "cafe", "tags": ["exact_name"], "notes": "exact real name (chain)"}
+{"id": "h21", "query": "Mega shopping cafe", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": null, "tags": ["partial_name", "agentic"], "notes": "partial real name reference"}
+{"id": "h22", "query": "good for studying", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": "cafe", "tags": ["vibe"], "notes": "pure vibe attr match"}
+{"id": "h23", "query": "popular with students", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": null, "tags": ["audience", "vibe"], "notes": "audience-style vibe"}
+{"id": "h24", "query": "restaurant good for two people", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": "restaurant", "tags": ["vibe", "agentic"], "notes": "agent-style soft constraint — should map to 'date night' or 'casual' vibe"}
+{"id": "h25", "query": "where to take guests for traditional food", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": "restaurant", "tags": ["vibe", "agentic"], "notes": "soft 'local favorite' or 'tourist spot' vibe"}
+{"id": "h26", "query": "tourist attractions nearby", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": "attraction", "tags": ["structured"], "notes": "category-leaning"}
+{"id": "h27", "query": "rainy day activity for kids", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": "museum", "tags": ["agentic", "vibe"], "notes": "soft-constraint agent query → 'rainy day' museum vibe"}
+{"id": "h28", "query": "business meeting venue", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": "hotel", "tags": ["vibe", "agentic"], "notes": "matches 'business travel' / 'business district'"}
+{"id": "h29", "query": "place to grab a quick bite", "lat": 51.1283, "lng": 71.4276, "radius_m": 1500, "expected_category": "fast_food", "tags": ["agentic", "vibe"], "notes": "matches 'quick bite' vibe; agent-style phrasing"}
+{"id": "h30", "query": "cozy spot for date", "lat": 51.1283, "lng": 71.4276, "radius_m": 2000, "expected_category": null, "tags": ["vibe", "agentic"], "notes": "cross-category vibe → cafe or restaurant"}
+{"id": "t01", "query": "best cafes in astana", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": "cafe", "tags": ["structured"], "notes": "templated category-leaning"}
+{"id": "t02", "query": "cafes within walking distance", "lat": 51.1283, "lng": 71.4276, "radius_m": 800, "expected_category": "cafe", "tags": ["structured", "proximity"], "notes": "templated proximity"}
+{"id": "t03", "query": "wifi cafe", "lat": 51.1283, "lng": 71.4276, "radius_m": 1500, "expected_category": "cafe", "tags": ["amenity_wifi"], "notes": "templated amenity"}
+{"id": "t04", "query": "cafe with outdoor seating", "lat": 51.1283, "lng": 71.4276, "radius_m": 2000, "expected_category": "cafe", "tags": ["amenity_outdoor"], "notes": "templated amenity"}
+{"id": "t05", "query": "cozy coffee shop", "lat": 51.1283, "lng": 71.4276, "radius_m": 2000, "expected_category": "cafe", "tags": ["vibe"], "notes": "templated vibe"}
+{"id": "t06", "query": "Starbucks", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": "cafe", "tags": ["exact_name"], "notes": "real cafe brand"}
+{"id": "t07", "query": "italian restaurant", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": "restaurant", "tags": ["vibe"], "notes": "cuisine-leaning"}
+{"id": "t08", "query": "casual dinner spot", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": "restaurant", "tags": ["vibe"], "notes": "casual vibe"}
+{"id": "t09", "query": "family-friendly restaurant", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": "restaurant", "tags": ["vibe"], "notes": "family vibe"}
+{"id": "t10", "query": "local favorite restaurant", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": "restaurant", "tags": ["vibe"], "notes": "local-favorite vibe"}
+{"id": "t11", "query": "kazakh national cuisine", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": "restaurant", "tags": ["vibe", "agentic"], "notes": "cultural reference"}
+{"id": "t12", "query": "restaurant for tourists", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": "restaurant", "tags": ["vibe"], "notes": "tourist-spot vibe"}
+{"id": "t13", "query": "sports bar with TVs", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": "bar", "tags": ["vibe"], "notes": "sports bar vibe"}
+{"id": "t14", "query": "craft cocktails", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": "bar", "tags": ["vibe"], "notes": "craft cocktails vibe"}
+{"id": "t15", "query": "nightlife", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": "bar", "tags": ["vibe"], "notes": "nightlife vibe"}
+{"id": "t16", "query": "burger place", "lat": 51.1283, "lng": 71.4276, "radius_m": 2000, "expected_category": "fast_food", "tags": ["vibe"], "notes": "cuisine fast food"}
+{"id": "t17", "query": "delivery food", "lat": 51.1283, "lng": 71.4276, "radius_m": 2000, "expected_category": "fast_food", "tags": ["vibe"], "notes": "delivery-friendly vibe"}
+{"id": "t18", "query": "late night food", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": "fast_food", "tags": ["vibe", "hours"], "notes": "late-night vibe"}
+{"id": "t19", "query": "pharmacy nearby", "lat": 51.1283, "lng": 71.4276, "radius_m": 1000, "expected_category": "pharmacy", "tags": ["structured", "proximity"], "notes": "structured + proximity"}
+{"id": "t20", "query": "modern pharmacy", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": "pharmacy", "tags": ["vibe"], "notes": "modern vibe"}
+{"id": "t21", "query": "Halyk", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": "bank", "tags": ["exact_name"], "notes": "real bank brand prefix"}
+{"id": "t22", "query": "bank in business district", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": "bank", "tags": ["vibe"], "notes": "business-district vibe"}
+{"id": "t23", "query": "Kaspi atm", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": "atm", "tags": ["exact_name"], "notes": "real ATM brand"}
+{"id": "t24", "query": "ATM 24/7", "lat": 51.1283, "lng": 71.4276, "radius_m": 2000, "expected_category": "atm", "tags": ["vibe"], "notes": "24/7 vibe"}
+{"id": "t25", "query": "ForteBank", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": null, "tags": ["exact_name", "agentic"], "notes": "brand spans ATM + bank"}
+{"id": "t26", "query": "iconic places to visit", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": "attraction", "tags": ["vibe"], "notes": "iconic vibe"}
+{"id": "t27", "query": "tourist sightseeing", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": "attraction", "tags": ["structured"], "notes": "tourist-oriented"}
+{"id": "t28", "query": "educational museum", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": "museum", "tags": ["vibe"], "notes": "educational vibe"}
+{"id": "t29", "query": "history museum", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": "museum", "tags": ["structured", "vibe"], "notes": "history vibe"}
+{"id": "t30", "query": "business hotel", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": "hotel", "tags": ["vibe"], "notes": "business-travel vibe"}
+{"id": "t31", "query": "hotel with rooftop view", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": "hotel", "tags": ["vibe"], "notes": "rooftop vibe"}
+{"id": "t32", "query": "5 star hotel", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": "hotel", "tags": ["vibe"], "notes": "luxury vibe"}
+{"id": "t33", "query": "Astana plaza hotel", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": "hotel", "tags": ["exact_name"], "notes": "real hotel name"}
+{"id": "t34", "query": "cheap hotel", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": "hotel", "tags": ["vibe"], "notes": "budget vibe"}
+{"id": "t35", "query": "viewpoint over esil river", "lat": 51.1283, "lng": 71.4276, "radius_m": 5000, "expected_category": "viewpoint", "tags": ["structured", "vibe"], "notes": "structured + named river"}
+{"id": "t36", "query": "best place for instagram photo", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": null, "tags": ["vibe", "agentic"], "notes": "instagrammable cross-category"}
+{"id": "t37", "query": "guest house with local hosts", "lat": 51.1283, "lng": 71.4276, "radius_m": 8000, "expected_category": "guest_house", "tags": ["vibe"], "notes": "local-hosts vibe; sparse"}
+{"id": "t38", "query": "place to work from", "lat": 51.1283, "lng": 71.4276, "radius_m": 2000, "expected_category": null, "tags": ["agentic", "vibe"], "notes": "agent — 'quiet workspace'"}
+{"id": "t39", "query": "where to eat breakfast", "lat": 51.1283, "lng": 71.4276, "radius_m": 1500, "expected_category": null, "tags": ["agentic"], "notes": "agent breakfast"}
+{"id": "t40", "query": "where to drink wine", "lat": 51.1283, "lng": 71.4276, "radius_m": 2000, "expected_category": "bar", "tags": ["agentic"], "notes": "agent wine bar"}
+{"id": "t41", "query": "anniversary dinner", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": "restaurant", "tags": ["agentic", "vibe"], "notes": "date-night vibe agent"}
+{"id": "t42", "query": "where to take parents", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": null, "tags": ["agentic"], "notes": "agent — family-friendly cross"}
+{"id": "t43", "query": "afternoon coffee with view", "lat": 51.1283, "lng": 71.4276, "radius_m": 2000, "expected_category": "cafe", "tags": ["vibe"], "notes": "cafe + scenic"}
+{"id": "t44", "query": "morning coffee on my way", "lat": 51.1283, "lng": 71.4276, "radius_m": 800, "expected_category": "cafe", "tags": ["proximity"], "notes": "proximity-leaning"}
+{"id": "t45", "query": "quick lunch", "lat": 51.1283, "lng": 71.4276, "radius_m": 1500, "expected_category": "fast_food", "tags": ["agentic"], "notes": "fast bite"}
+{"id": "t46", "query": "expensive restaurant", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": "restaurant", "tags": ["vibe", "price"], "notes": "high price_level"}
+{"id": "t47", "query": "cheap eats", "lat": 51.1283, "lng": 71.4276, "radius_m": 2000, "expected_category": null, "tags": ["agentic", "price"], "notes": "low price_level cross"}
+{"id": "t48", "query": "vegan restaurant", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": "restaurant", "tags": ["amenity"], "notes": "vegan amenity match"}
+{"id": "t49", "query": "wheelchair accessible cafe", "lat": 51.1283, "lng": 71.4276, "radius_m": 3000, "expected_category": "cafe", "tags": ["amenity"], "notes": "accessibility amenity"}
+{"id": "t50", "query": "where can I park", "lat": 51.1283, "lng": 71.4276, "radius_m": 1500, "expected_category": null, "tags": ["agentic", "amenity"], "notes": "agent — should surface lot/garage parking"}

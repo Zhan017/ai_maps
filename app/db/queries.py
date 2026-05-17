@@ -5,7 +5,7 @@ import json
 from typing import Any
 
 NEARBY_CANDIDATES_SQL = """
-    SELECT p.id, p.primary_name, p.brand_name, p.phone_number, p.primary_website_url,
+    SELECT p.id::text, p.primary_name, p.brand_name, p.phone_number, p.primary_website_url,
            pa.formatted_address, pa.street, pa.house_number, pa.city,
            ST_Distance(p.location, ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography) AS meters,
            p.category_id, pc.code AS category_code

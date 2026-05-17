@@ -54,12 +54,22 @@ def test_known_place_matches(client, auth_headers):
 
 
 def test_novel_place_is_created_unverified(client, auth_headers):
+    import random
+    import uuid
+    # Unique name + randomized coords on the South Pacific (Point Nemo region).
+    # Two safeguards against prior-test pollution: a) the candidate radius is
+    # 500m and we randomize within ±0.5° (~50km), so no two runs share a 500m
+    # window; b) the name is unique. Together these guarantee an empty
+    # candidate pool on every run.
+    unique = uuid.uuid4().hex[:8]
+    lat = -48.0 + random.uniform(-0.5, 0.5)
+    lng = -123.0 + random.uniform(-0.5, 0.5)
     body = {
         "places": [{
-            "customer_place_id": "test-novel-1",
-            "name": "ZZZZZZ Completely Fake Place 9999",
-            "lat": 51.13,
-            "lng": 71.43,
+            "customer_place_id": f"test-novel-{unique}",
+            "name": f"ZZZZZZ NoMatchTest {unique}",
+            "lat": lat,
+            "lng": lng,
             "category": "cafe",
         }]
     }

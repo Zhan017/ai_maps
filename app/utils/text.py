@@ -2,16 +2,19 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 
 _WS = re.compile(r"\s+")
-_NON_ALPHANUM = re.compile(r"[^a-z0-9 ]+")
+# Strip punctuation/symbols but keep Unicode letters + digits (Cyrillic, Kazakh, etc.)
+_PUNCT = re.compile(r"[^\w ]+", flags=re.UNICODE)
 
 
 def normalize_name(name: str | None) -> str:
     if not name:
         return ""
-    s = name.lower().strip()
-    s = _NON_ALPHANUM.sub(" ", s)
+    # Normalize Unicode (e.g. accent forms) then casefold for cross-script case-insensitivity.
+    s = unicodedata.normalize("NFKC", name).casefold().strip()
+    s = _PUNCT.sub(" ", s)
     s = _WS.sub(" ", s).strip()
     return s
 

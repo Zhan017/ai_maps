@@ -12,6 +12,19 @@ from zoneinfo import ZoneInfo
 from app.core.config import DEFAULT_TZ
 from app.services import embeddings
 
+# Hybrid (semantic path) score = HYBRID_ANN_W·ANN + HYBRID_DISTANCE_W·dist_score
+# + HYBRID_POPULARITY_W·popularity. Extracted as module-level constants so
+# the eval harness can override them via monkeypatch without monkey-patching
+# the function body.
+HYBRID_ANN_W = 0.6
+HYBRID_DISTANCE_W = 0.25
+HYBRID_POPULARITY_W = 0.15
+
+# Structured-only (no semantic query) score = STRUCTURED_DISTANCE_W·dist_score
+# + STRUCTURED_POPULARITY_W·popularity.
+STRUCTURED_DISTANCE_W = 0.7
+STRUCTURED_POPULARITY_W = 0.3
+
 
 @dataclass
 class SearchQuery:
@@ -209,7 +222,7 @@ def _hybrid_score(row: dict, query: SearchQuery) -> float:
     else:
         d_score = 0.5
     pop = float(row.get("popularity_score") or 0.0)
-    return 0.6 * ann + 0.25 * d_score + 0.15 * pop
+    return HYBRID_ANN_W * ann + HYBRID_DISTANCE_W * d_score + HYBRID_POPULARITY_W * pop
 
 
 def search(pool, openai_client, query: SearchQuery) -> dict:
@@ -229,7 +242,7 @@ def search(pool, openai_client, query: SearchQuery) -> dict:
                 d_score = max(0.0, 1.0 - r["distance_m"] / max(query.radius_m, 1))
             else:
                 d_score = 0.5
-            s = 0.7 * d_score + 0.3 * float(r.get("popularity_score") or 0.0)
+            s = STRUCTURED_DISTANCE_W * d_score + STRUCTURED_POPULARITY_W * float(r.get("popularity_score") or 0.0)
             scored.append((s, r))
         results = [_row_to_result(r, query, s) for (s, r) in scored]
 
