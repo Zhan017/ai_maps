@@ -6,7 +6,8 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; font-family: -apple-system, system-ui, sans-serif; }
-        #map { height: 100vh; }
+        #map { height: 100vh; margin-right: 360px; }
+
         #panel {
             position: absolute; top: 10px; left: 50px; z-index: 1000;
             background: white; padding: 12px 16px; border-radius: 8px;
@@ -21,6 +22,52 @@
         }
         #status { margin-top: 8px; color: #666; font-size: 12px; }
         .hint { color: #666; font-size: 12px; }
+
+        #chat-panel {
+            position: fixed; top: 0; right: 0; bottom: 0; width: 360px;
+            background: #fafafa; border-left: 1px solid #ddd;
+            display: flex; flex-direction: column; z-index: 1100;
+        }
+        #chat-header {
+            padding: 12px 16px; background: #1e88e5; color: white;
+            font-weight: 600; display: flex; justify-content: space-between; align-items: center;
+        }
+        #chat-header button {
+            background: rgba(255,255,255,0.2); color: white; border: none;
+            padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;
+        }
+        #chat-header button:hover { background: rgba(255,255,255,0.35); }
+        #messages {
+            flex: 1; overflow-y: auto; padding: 12px;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .bubble {
+            max-width: 90%; padding: 8px 12px; border-radius: 12px;
+            font-size: 13px; line-height: 1.4; white-space: pre-wrap;
+        }
+        .bubble.user { background: #1e88e5; color: white; align-self: flex-end; }
+        .bubble.assistant { background: white; border: 1px solid #e0e0e0; align-self: flex-start; }
+        .bubble.error { background: #ffebee; color: #b71c1c; align-self: flex-start; }
+        .debug { font-size: 11px; margin-top: 4px; align-self: flex-start; width: 100%; }
+        .debug summary { cursor: pointer; color: #666; padding: 2px 4px; }
+        .debug pre {
+            background: #263238; color: #eceff1; padding: 8px; border-radius: 4px;
+            overflow-x: auto; font-size: 10px; margin: 4px 0;
+        }
+        .debug-meta { color: #666; font-size: 10px; margin: 2px 0; }
+        #chat-form {
+            display: flex; gap: 6px; padding: 10px; border-top: 1px solid #ddd; background: white;
+        }
+        #chat-input {
+            flex: 1; padding: 8px 10px; border: 1px solid #ccc;
+            border-radius: 6px; font-size: 13px;
+        }
+        #chat-form button {
+            padding: 8px 14px; cursor: pointer; border: none; border-radius: 6px; font-size: 13px;
+        }
+        #send-btn { background: #1e88e5; color: white; }
+        #clear-btn { background: #eee; color: #333; }
+        #send-btn:disabled { background: #90caf9; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -39,7 +86,22 @@
     </label>
     <div id="status">Click the map to start.</div>
 </div>
+
 <div id="map"></div>
+
+<div id="chat-panel">
+    <div id="chat-header">
+        <span>Ask the map</span>
+        <button id="clear-btn" type="button">Clear</button>
+    </div>
+    <div id="messages">
+        <div class="bubble assistant">Hi! Pan the map to where you want to look, then ask me something like "cafés near here" or "show me pharmacies within 1km".</div>
+    </div>
+    <form id="chat-form">
+        <input id="chat-input" type="text" placeholder="ask in plain English…" autocomplete="off" />
+        <button id="send-btn" type="submit">Send</button>
+    </form>
+</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
@@ -52,6 +114,16 @@
 
     const poiLayer = L.layerGroup().addTo(map);
     let circleLayer = null;
+
+    function renderPlaces(places) {
+        poiLayer.clearLayers();
+        places.forEach(r => {
+            const [x, y] = r.geometry.coordinates;
+            L.circleMarker([y, x], { radius: 5, color: '#e53935', fillOpacity: 0.7 })
+                .bindPopup(`<b>${r.name || '(unnamed)'}</b><br>${r.subtype}<br>${r.distance_m} m away`)
+                .addTo(poiLayer);
+        });
+    }
 
     async function search(lat, lon) {
         const radius = document.getElementById('radius').value;
@@ -67,24 +139,130 @@
         const data = await res.json();
         const t1 = performance.now();
 
-        poiLayer.clearLayers();
         if (circleLayer) map.removeLayer(circleLayer);
         circleLayer = L.circle([lat, lon], {
             radius: parseFloat(radius),
             color: '#1e88e5', weight: 1, fillOpacity: 0.05,
         }).addTo(map);
 
-        data.results.forEach(r => {
-            const [x, y] = r.geometry.coordinates;
-            L.circleMarker([y, x], { radius: 5, color: '#e53935', fillOpacity: 0.7 })
-                .bindPopup(`<b>${r.name || '(unnamed)'}</b><br>${r.subtype}<br>${r.distance_m} m away`)
-                .addTo(poiLayer);
-        });
-
+        renderPlaces(data.results);
         status.textContent = `${data.count} POIs · ${Math.round(t1 - t0)} ms`;
     }
 
     map.on('click', e => search(e.latlng.lat, e.latlng.lng));
+
+    // --- Chat ---
+
+    let sessionId = localStorage.getItem('chat_session');
+    if (!sessionId) {
+        sessionId = crypto.randomUUID();
+        localStorage.setItem('chat_session', sessionId);
+    }
+
+    const messagesEl = document.getElementById('messages');
+    const inputEl = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const form = document.getElementById('chat-form');
+
+    function addBubble(text, kind) {
+        const div = document.createElement('div');
+        div.className = `bubble ${kind}`;
+        div.textContent = text;
+        messagesEl.appendChild(div);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+        return div;
+    }
+
+    function addDebug(debug) {
+        const details = document.createElement('details');
+        details.className = 'debug';
+        const summary = document.createElement('summary');
+        summary.textContent = `Show SQL · ${debug.iterations.length} iter · ${debug.total_tokens} tokens · ${debug.total_latency_ms} ms`;
+        details.appendChild(summary);
+
+        debug.iterations.forEach((it, i) => {
+            const meta = document.createElement('div');
+            meta.className = 'debug-meta';
+            const parts = [`#${i + 1} ${it.tool}`];
+            if (typeof it.rows === 'number') parts.push(`${it.rows} rows`);
+            if (typeof it.tool_latency_ms === 'number') parts.push(`tool ${it.tool_latency_ms}ms`);
+            parts.push(`llm ${it.llm_latency_ms}ms`);
+            meta.textContent = parts.join(' · ');
+            details.appendChild(meta);
+
+            if (it.error) {
+                const err = document.createElement('pre');
+                err.textContent = 'ERROR: ' + it.error;
+                details.appendChild(err);
+            }
+            if (it.args) {
+                const args = document.createElement('pre');
+                args.textContent = 'args: ' + JSON.stringify(it.args, null, 2);
+                details.appendChild(args);
+            }
+            if (it.sql) {
+                const sql = document.createElement('pre');
+                sql.textContent = it.sql + '\n\nparams: ' + JSON.stringify(it.params);
+                details.appendChild(sql);
+            }
+        });
+
+        messagesEl.appendChild(details);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    form.addEventListener('submit', async e => {
+        e.preventDefault();
+        const message = inputEl.value.trim();
+        if (!message) return;
+
+        addBubble(message, 'user');
+        inputEl.value = '';
+        sendBtn.disabled = true;
+
+        const thinking = addBubble('…', 'assistant');
+
+        try {
+            const center = map.getCenter();
+            const res = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    message,
+                    map_center: { lat: center.lat, lon: center.lng },
+                }),
+            });
+            const data = await res.json();
+            thinking.remove();
+
+            if (!res.ok) {
+                addBubble(data.detail || `Error ${res.status}`, 'error');
+            } else {
+                addBubble(data.reply || '(no reply)', 'assistant');
+                if (data.debug) addDebug(data.debug);
+                if (data.places && data.places.length) {
+                    renderPlaces(data.places);
+                    if (circleLayer) { map.removeLayer(circleLayer); circleLayer = null; }
+                }
+            }
+        } catch (err) {
+            thinking.remove();
+            addBubble('Network error: ' + err.message, 'error');
+        } finally {
+            sendBtn.disabled = false;
+            inputEl.focus();
+        }
+    });
+
+    clearBtn.addEventListener('click', async () => {
+        try {
+            await fetch('/api/chat/' + encodeURIComponent(sessionId), { method: 'DELETE' });
+        } catch (e) { /* ignore — local clear still proceeds */ }
+        messagesEl.innerHTML = '';
+        addBubble('Chat cleared. Pan the map and ask away.', 'assistant');
+    });
 </script>
 </body>
 </html>
