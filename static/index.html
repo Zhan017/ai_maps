@@ -2,267 +2,1123 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>Astana POI Explorer</title>
+    <title>VOYGR Replica — Astana</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
     <style>
-        body { margin: 0; font-family: -apple-system, system-ui, sans-serif; }
-        #map { height: 100vh; margin-right: 360px; }
-
-        #panel {
-            position: absolute; top: 10px; left: 50px; z-index: 1000;
-            background: white; padding: 12px 16px; border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            font-size: 14px; min-width: 220px;
+        :root {
+            --primary: #1e88e5;
+            --primary-dark: #1565c0;
+            --bg: #f7f9fc;
+            --card: #ffffff;
+            --border: #e3e7ee;
+            --text: #1f2933;
+            --text-muted: #6b7280;
+            --ok: #43a047;
+            --warn: #fb8c00;
+            --closed: #757575;
+            --shadow: 0 2px 12px rgba(20, 30, 50, 0.08);
         }
-        #panel label { display: block; margin: 6px 0; }
-        #panel input, #panel select { width: 140px; padding: 4px; }
-        #panel button {
-            margin-top: 8px; padding: 6px 12px; cursor: pointer;
-            background: #1e88e5; color: white; border: none; border-radius: 4px;
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: var(--text); background: var(--bg);
         }
-        #status { margin-top: 8px; color: #666; font-size: 12px; }
-        .hint { color: #666; font-size: 12px; }
+        button { font-family: inherit; }
 
+        /* Layout */
+        #map {
+            position: absolute; top: 0; bottom: 0;
+            left: 360px; right: 380px;
+        }
+        #left-col {
+            position: fixed; top: 0; bottom: 0; left: 0; width: 360px;
+            background: var(--bg); border-right: 1px solid var(--border);
+            display: flex; flex-direction: column; z-index: 1000;
+        }
+        #left-col header {
+            padding: 14px 16px 10px;
+            background: var(--card); border-bottom: 1px solid var(--border);
+        }
+        #left-col header h1 {
+            margin: 0; font-size: 15px; letter-spacing: 0.2px;
+        }
+        #left-col header .subtitle {
+            font-size: 11px; color: var(--text-muted); margin-top: 2px;
+        }
+        #stats-strip {
+            font-size: 10px; color: var(--text-muted); margin-top: 8px;
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 10px;
+        }
+        #stats-strip .stat { display: flex; align-items: baseline; gap: 4px; }
+        #stats-strip .num {
+            font-size: 13px; font-weight: 600; color: var(--text);
+            font-variant-numeric: tabular-nums;
+        }
+        #left-col .scroll {
+            flex: 1; overflow-y: auto; padding: 12px;
+        }
+        .section {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 10px; padding: 12px; margin-bottom: 12px;
+        }
+        .section h2 {
+            margin: 0 0 8px; font-size: 12px; text-transform: uppercase;
+            letter-spacing: 0.6px; color: var(--text-muted); font-weight: 600;
+        }
+        label { display: block; margin: 6px 0; font-size: 12px; color: var(--text); }
+        label.row {
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        }
+        label input[type="text"], label input[type="number"], label select {
+            width: 160px; padding: 5px 7px; border: 1px solid var(--border);
+            border-radius: 6px; font-size: 13px; background: white;
+        }
+        input[type="checkbox"] { accent-color: var(--primary); }
+        button.primary {
+            background: var(--primary); color: white; border: none;
+            padding: 7px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;
+            font-weight: 500;
+        }
+        button.primary:hover { background: var(--primary-dark); }
+        button.primary:disabled { background: #b3d4f5; cursor: not-allowed; }
+        button.ghost {
+            background: transparent; color: var(--primary); border: 1px solid var(--border);
+            padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;
+        }
+        button.ghost:hover { background: #eef5ff; }
+
+        /* Tabs */
+        .tabs {
+            display: flex; gap: 4px; margin-bottom: 12px;
+        }
+        .tab {
+            flex: 1; padding: 8px; text-align: center; cursor: pointer;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 8px; font-size: 12px; font-weight: 500; color: var(--text-muted);
+        }
+        .tab.active {
+            background: var(--primary); color: white; border-color: var(--primary);
+        }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+
+        /* Chips */
+        .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+        .chip {
+            display: inline-block; font-size: 11px; background: #eef5ff; color: var(--primary-dark);
+            border: 1px solid #bbdefb; padding: 1px 8px; border-radius: 999px;
+            line-height: 1.6;
+        }
+        .chip.warn { background: #fff8e1; color: #ef6c00; border-color: #ffe0b2; }
+        .chip.closed { background: #eeeeee; color: #424242; border-color: #cfd8dc; }
+        .chip.ok { background: #e8f5e9; color: #2e7d32; border-color: #c8e6c9; }
+        .chip-x {
+            margin-left: 4px; cursor: pointer; opacity: 0.6; font-weight: bold;
+        }
+        .chip-x:hover { opacity: 1; }
+
+        /* Filter chips bar (status of active filters) */
+        #active-filters {
+            font-size: 11px; color: var(--text-muted);
+        }
+        #active-filters .label { margin-bottom: 4px; }
+        #active-filters .empty { font-style: italic; color: #aaa; }
+
+        /* Result blocks */
+        .result-block {
+            margin-top: 10px; padding: 10px; border-radius: 8px;
+            background: #f5f8ff; border: 1px solid #d6e4ff; font-size: 12px;
+        }
+        .result-block.matched { background: #f1f8e9; border-color: #c5e1a5; }
+        .result-block.low_confidence { background: #fff8e1; border-color: #ffe082; }
+        .result-block.no_match { background: #ffebee; border-color: #ef9a9a; }
+        .result-block .title { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+        .result-block dl { margin: 6px 0 0; font-size: 11px; }
+        .result-block dt { color: var(--text-muted); display: inline; }
+        .result-block dd { display: inline; margin: 0 0 0 4px; }
+        .result-block dl > div { margin: 2px 0; }
+        .result-block a.view {
+            display: inline-block; margin-top: 8px; font-size: 12px;
+            color: var(--primary); cursor: pointer; text-decoration: underline;
+        }
+
+        .score-bars {
+            margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border);
+        }
+        .score-bars .label {
+            font-size: 10px; color: var(--text-muted); text-transform: uppercase;
+            letter-spacing: 0.5px; margin-bottom: 6px;
+        }
+        .score-row {
+            display: grid; grid-template-columns: 70px 1fr 36px;
+            gap: 6px; align-items: center; margin: 4px 0; font-size: 11px;
+        }
+        .score-row .feat { color: var(--text-muted); }
+        .score-row .bar {
+            height: 6px; background: #eef2f7; border-radius: 3px; overflow: hidden;
+        }
+        .score-row .bar > div {
+            height: 100%; background: linear-gradient(90deg, #1e88e5, #43a047);
+            border-radius: 3px; transition: width 240ms ease;
+        }
+        .score-row.zero .bar > div { background: #ffb74d; }
+        .score-row .val { text-align: right; font-variant-numeric: tabular-nums; }
+
+        /* Profile drawer (floating modal — no longer a fixed column) */
+        #profile-backdrop {
+            position: fixed; inset: 0; background: rgba(15, 25, 45, 0.42);
+            z-index: 1200; opacity: 0; pointer-events: none;
+            transition: opacity 160ms ease;
+        }
+        #profile-backdrop.open { opacity: 1; pointer-events: auto; }
+        #profile-drawer {
+            position: fixed; top: 5vh; bottom: 5vh; left: 50%;
+            width: min(460px, calc(100vw - 48px));
+            background: var(--card); border-radius: 14px;
+            box-shadow: 0 24px 60px rgba(15, 25, 45, 0.35);
+            z-index: 1250; display: flex; flex-direction: column;
+            transform: translate(-50%, 12px); opacity: 0; pointer-events: none;
+            transition: transform 200ms ease, opacity 160ms ease;
+        }
+        #profile-drawer.open {
+            transform: translate(-50%, 0); opacity: 1; pointer-events: auto;
+        }
+        #profile-drawer header {
+            padding: 14px 18px; border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: flex-start;
+            background: linear-gradient(180deg, #eef5ff 0%, #ffffff 100%);
+            border-radius: 14px 14px 0 0;
+        }
+        #profile-drawer header .name { font-size: 16px; font-weight: 600; }
+        #profile-drawer header .meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        #profile-drawer header .tag {
+            font-size: 9px; color: var(--primary-dark); text-transform: uppercase;
+            letter-spacing: 0.8px; font-weight: 600; margin-bottom: 4px; opacity: 0.85;
+        }
+        #profile-drawer header button.close {
+            background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted);
+            padding: 0 6px; line-height: 1;
+        }
+        #profile-drawer header button.close:hover { color: var(--text); }
+        #profile-drawer .scroll {
+            flex: 1; overflow-y: auto; padding: 12px 16px;
+        }
+        .prof-section {
+            margin: 12px 0; padding-top: 12px; border-top: 1px solid var(--border);
+        }
+        .prof-section:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+        .prof-section h3 {
+            margin: 0 0 6px; font-size: 11px; text-transform: uppercase;
+            letter-spacing: 0.6px; color: var(--text-muted); font-weight: 600;
+        }
+        .hours-grid {
+            display: grid; grid-template-columns: 24px 1fr; gap: 4px 8px; font-size: 12px;
+        }
+        .hours-grid .day { color: var(--text-muted); }
+        .hours-grid .today { color: var(--primary); font-weight: 600; }
+        .source-row {
+            display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 3px 0;
+        }
+        .source-row .dot {
+            width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+        }
+        .source-row .name { flex: 1; }
+        .source-row .when { font-size: 10px; color: var(--text-muted); }
+        .source-row .rel { font-size: 10px; color: var(--text-muted); }
+        .history-row { font-size: 12px; padding: 3px 0; color: var(--text); }
+        .history-row .when { color: var(--text-muted); font-size: 10px; }
+        .kv { font-size: 12px; padding: 2px 0; }
+        .kv .k { color: var(--text-muted); margin-right: 6px; }
+
+        .skeleton-block {
+            background: linear-gradient(90deg, #f0f3f8 25%, #e6ebf3 50%, #f0f3f8 75%);
+            background-size: 200% 100%;
+            border-radius: 6px;
+            animation: shimmer 1.4s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Chat */
         #chat-panel {
-            position: fixed; top: 0; right: 0; bottom: 0; width: 360px;
-            background: #fafafa; border-left: 1px solid #ddd;
+            position: fixed; top: 0; right: 0; bottom: 0; width: 380px;
+            background: var(--card); border-left: 1px solid var(--border);
             display: flex; flex-direction: column; z-index: 1100;
         }
         #chat-header {
-            padding: 12px 16px; background: #1e88e5; color: white;
+            padding: 14px 16px; background: var(--primary); color: white;
             font-weight: 600; display: flex; justify-content: space-between; align-items: center;
         }
+        #chat-header .title { font-size: 14px; }
+        #chat-header .sub { font-size: 11px; opacity: 0.85; font-weight: 400; margin-top: 2px; }
         #chat-header button {
-            background: rgba(255,255,255,0.2); color: white; border: none;
-            padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;
+            background: rgba(255,255,255,0.18); color: white; border: none;
+            padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;
         }
-        #chat-header button:hover { background: rgba(255,255,255,0.35); }
+        #chat-header button:hover { background: rgba(255,255,255,0.32); }
+
         #messages {
             flex: 1; overflow-y: auto; padding: 12px;
             display: flex; flex-direction: column; gap: 10px;
         }
         .bubble {
-            max-width: 90%; padding: 8px 12px; border-radius: 12px;
-            font-size: 13px; line-height: 1.4; white-space: pre-wrap;
+            max-width: 90%; padding: 9px 12px; border-radius: 12px;
+            font-size: 13px; line-height: 1.45; white-space: pre-wrap;
         }
-        .bubble.user { background: #1e88e5; color: white; align-self: flex-end; }
-        .bubble.assistant { background: white; border: 1px solid #e0e0e0; align-self: flex-start; }
+        .bubble.user { background: var(--primary); color: white; align-self: flex-end; }
+        .bubble.assistant { background: white; border: 1px solid var(--border); align-self: flex-start; }
         .bubble.error { background: #ffebee; color: #b71c1c; align-self: flex-start; }
-        .debug { font-size: 11px; margin-top: 4px; align-self: flex-start; width: 100%; }
-        .debug summary { cursor: pointer; color: #666; padding: 2px 4px; }
-        .debug pre {
-            background: #263238; color: #eceff1; padding: 8px; border-radius: 4px;
-            overflow-x: auto; font-size: 10px; margin: 4px 0;
+
+        .examples {
+            display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;
         }
-        .debug-meta { color: #666; font-size: 10px; margin: 2px 0; }
+        .example {
+            font-size: 12px; padding: 4px 10px; border-radius: 999px;
+            background: #eef5ff; color: var(--primary-dark); border: 1px solid #bbdefb;
+            cursor: pointer; transition: background 100ms;
+        }
+        .example:hover { background: #dfeaff; }
+
+        .place-card {
+            background: white; border: 1px solid var(--border); border-radius: 10px;
+            padding: 10px 12px; font-size: 12px; align-self: flex-start; width: 92%;
+            cursor: pointer; transition: box-shadow 100ms;
+        }
+        .place-card:hover { box-shadow: var(--shadow); border-color: #bbdefb; }
+        .place-card .title { font-weight: 600; font-size: 13px; }
+        .place-card .sub { color: var(--text-muted); margin: 2px 0; }
+        .place-card .freshness { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+        .freshness-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+
+        .meta-line {
+            font-size: 11px; color: var(--text-muted);
+            align-self: flex-start; padding: 2px 4px;
+            display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+        }
+        .meta-line .pill {
+            font-size: 10px; padding: 1px 7px; border-radius: 999px;
+            background: #eef5ff; color: var(--primary-dark);
+        }
+        .meta-line .pill.semantic { background: #f3e5f5; color: #6a1b9a; }
+        .meta-line .pill.struct { background: #e0f2f1; color: #00695c; }
+        .meta-line .expand {
+            cursor: pointer; color: var(--primary); font-weight: 500;
+            background: none; border: none; padding: 0; font-size: 11px;
+        }
+        .meta-line .expand:hover { text-decoration: underline; }
+        .meta-pre {
+            display: none; background: #f7f9fc; color: var(--text);
+            border: 1px solid var(--border); border-radius: 6px;
+            padding: 8px 10px; font-size: 10px; margin: 4px 0;
+            overflow-x: auto; align-self: flex-start; width: 92%;
+            font-family: ui-monospace, "SF Mono", Menlo, monospace;
+            white-space: pre-wrap; word-break: break-word;
+        }
+        .meta-pre.show { display: block; }
         #chat-form {
-            display: flex; gap: 6px; padding: 10px; border-top: 1px solid #ddd; background: white;
+            display: flex; gap: 6px; padding: 10px; border-top: 1px solid var(--border); background: var(--card);
         }
         #chat-input {
-            flex: 1; padding: 8px 10px; border: 1px solid #ccc;
+            flex: 1; padding: 8px 10px; border: 1px solid var(--border);
             border-radius: 6px; font-size: 13px;
         }
-        #chat-form button {
-            padding: 8px 14px; cursor: pointer; border: none; border-radius: 6px; font-size: 13px;
+        #chat-form button { padding: 8px 14px; }
+
+        /* Map status pill + search-this-area button */
+        .map-status {
+            position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
+            background: var(--card); padding: 6px 12px; border-radius: 999px;
+            box-shadow: var(--shadow); font-size: 12px; color: var(--text-muted);
+            z-index: 600; border: 1px solid var(--border);
         }
-        #send-btn { background: #1e88e5; color: white; }
-        #clear-btn { background: #eee; color: #333; }
-        #send-btn:disabled { background: #90caf9; cursor: not-allowed; }
+        .map-redo {
+            position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+            z-index: 650; padding: 8px 16px; border-radius: 999px;
+            background: var(--card); color: var(--primary-dark); font-weight: 500;
+            font-size: 13px; border: 1.5px solid var(--primary);
+            box-shadow: 0 4px 12px rgba(20, 30, 50, 0.15);
+            cursor: pointer; opacity: 0; pointer-events: none;
+            transition: opacity 160ms ease, transform 160ms ease;
+        }
+        .map-redo.show { opacity: 1; pointer-events: auto; }
+        .map-redo:hover { background: var(--primary); color: white; }
+        .map-redo::before {
+            content: "↻ "; margin-right: 4px;
+        }
+        .leaflet-popup-content { font-size: 12px; }
+        .leaflet-popup-content b { font-size: 13px; }
+
+        /* Custom cluster icons (override leaflet.markercluster defaults) */
+        .cluster-icon {
+            background: rgba(30, 136, 229, 0.18);
+            border: 2px solid rgba(30, 136, 229, 0.7);
+            border-radius: 50%;
+            color: var(--primary-dark);
+            font-weight: 600; font-size: 12px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 6px rgba(20, 30, 50, 0.18);
+        }
+        .cluster-md { font-size: 13px; }
+        .cluster-lg { font-size: 14px; background: rgba(30, 136, 229, 0.28); border-color: var(--primary); }
+        .marker-cluster div { background: transparent !important; color: inherit !important; }
+        .marker-cluster { background: transparent !important; }
     </style>
 </head>
 <body>
-<div id="panel">
-    <strong>Astana POI Explorer</strong>
-    <div class="hint">Click anywhere on the map to search.</div>
-    <label>Radius (m): <input type="number" id="radius" value="500" min="50" max="10000" /></label>
-    <label>Subtype:
-        <select id="subtype">
-            <option value="">any</option>
-            <option>restaurant</option><option>cafe</option><option>bar</option>
-            <option>fast_food</option><option>pharmacy</option><option>bank</option>
-            <option>atm</option><option>attraction</option><option>museum</option>
-            <option>hotel</option><option>viewpoint</option><option>guest_house</option>
-        </select>
-    </label>
-    <div id="status">Click the map to start.</div>
+
+<div id="left-col">
+    <header>
+        <h1>VOYGR Replica</h1>
+        <div class="subtitle">place intelligence · Astana · mock data</div>
+        <div id="stats-strip"></div>
+    </header>
+    <div class="scroll">
+
+        <div class="tabs">
+            <div class="tab active" data-tab="explore">Explore</div>
+            <div class="tab" data-tab="validate">Validate</div>
+        </div>
+
+        <!-- Explore tab -->
+        <div class="tab-pane active" data-tab="explore">
+            <div class="section">
+                <h2>Filters</h2>
+                <label class="row">Radius (m)
+                    <input type="number" id="radius" value="1000" min="50" max="20000" />
+                </label>
+                <label class="row">Category
+                    <select id="category">
+                        <option value="">any</option>
+                        <option>restaurant</option><option>cafe</option><option>bar</option>
+                        <option>fast_food</option><option>pharmacy</option><option>bank</option>
+                        <option>atm</option><option>attraction</option><option>museum</option>
+                        <option>hotel</option><option>viewpoint</option><option>guest_house</option>
+                    </select>
+                </label>
+                <label class="row">Open now <input type="checkbox" id="open_now" /></label>
+                <label class="row">Has wifi <input type="checkbox" id="wifi" /></label>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">
+                    Filters apply to both <b>map clicks</b> and the <b>chat</b> on the right.
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Active filters</h2>
+                <div id="active-filters"></div>
+            </div>
+
+            <div class="section">
+                <h2>Tip</h2>
+                <div style="font-size:12px; color: var(--text);">
+                    Click the map to search structured. Use the chat for natural-language &amp; vibe queries
+                    (those go through <code style="font-size:11px;background:#eef;padding:1px 4px;border-radius:3px">pgvector</code>).
+                </div>
+            </div>
+        </div>
+
+        <!-- Validate tab -->
+        <div class="tab-pane" data-tab="validate">
+            <div class="section">
+                <h2>POST /v1/places:validate-enrich</h2>
+                <div style="font-size:12px; color: var(--text-muted); margin-bottom:8px;">
+                    Submit a customer place; the matching engine finds the canonical record
+                    and returns the enriched profile.
+                </div>
+                <label>Name
+                    <input type="text" id="v-name" placeholder="Baiterek Cafe" style="width: 100%;" />
+                </label>
+                <label>Address (optional)
+                    <input type="text" id="v-addr" placeholder="Kabanbay Batyr 10, Astana" style="width: 100%;" />
+                </label>
+                <label class="row">Lat
+                    <input type="number" id="v-lat" value="51.13" step="0.0001" />
+                </label>
+                <label class="row">Lng
+                    <input type="number" id="v-lng" value="71.43" step="0.0001" />
+                </label>
+                <label class="row">Category
+                    <select id="v-cat">
+                        <option value="">—</option>
+                        <option>restaurant</option><option>cafe</option><option>bar</option>
+                        <option>fast_food</option><option>pharmacy</option><option>bank</option>
+                        <option>atm</option><option>attraction</option><option>museum</option>
+                        <option>hotel</option><option>viewpoint</option><option>guest_house</option>
+                    </select>
+                </label>
+                <div style="display:flex; gap: 8px; margin-top: 10px;">
+                    <button class="primary" id="v-submit">Validate &amp; Enrich</button>
+                    <button class="ghost" id="v-from-map">Use map center</button>
+                    <button class="ghost" id="v-sample">Sample</button>
+                </div>
+                <div id="v-result"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Profile drawer (modal) -->
+<div id="profile-backdrop"></div>
+<div id="profile-drawer">
+    <header>
+        <div>
+            <div class="tag">Canonical profile · /api/place/{id}</div>
+            <div class="name" id="prof-name">—</div>
+            <div class="meta" id="prof-meta"></div>
+        </div>
+        <button class="close" id="prof-close" title="Close">✕</button>
+    </header>
+    <div class="scroll" id="prof-body"></div>
 </div>
 
 <div id="map"></div>
+<button class="map-redo" id="map-redo" type="button">Search this area</button>
+<div class="map-status" id="map-status">Click anywhere on the map to search.</div>
 
 <div id="chat-panel">
     <div id="chat-header">
-        <span>Ask the map</span>
+        <div>
+            <div class="title">Place intelligence</div>
+            <div class="sub">structured + semantic over Astana</div>
+        </div>
         <button id="clear-btn" type="button">Clear</button>
     </div>
     <div id="messages">
-        <div class="bubble assistant">Hi! Pan the map to where you want to look, then ask me something like "cafés near here" or "show me pharmacies within 1km".</div>
+        <div class="bubble assistant">
+            Hi! Try one of these, or pan the map and ask anything:
+            <div class="examples">
+                <span class="example">quiet coffee with wifi</span>
+                <span class="example">instagrammable rooftop bars</span>
+                <span class="example">pharmacies open now</span>
+                <span class="example">kid-friendly museums</span>
+            </div>
+        </div>
     </div>
     <form id="chat-form">
         <input id="chat-input" type="text" placeholder="ask in plain English…" autocomplete="off" />
-        <button id="send-btn" type="submit">Send</button>
+        <button class="primary" id="send-btn" type="submit">Send</button>
     </form>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script>
-    const map = L.map('map').setView([51.1283, 71.4276], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap',
+'use strict';
+
+// ============================================================ state
+
+const State = {
+    selectedPlaceId: null,
+    selectedMarker: null,
+    markers: {},          // place_id -> Leaflet marker
+};
+
+function getFilters() {
+    return {
+        radius_m: parseInt(document.getElementById('radius').value, 10),
+        category: document.getElementById('category').value || null,
+        open_now: document.getElementById('open_now').checked || null,
+        wifi: document.getElementById('wifi').checked || null,
+    };
+}
+
+function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]));
+}
+
+function fmtNum(n) {
+    return n.toLocaleString();
+}
+
+// ============================================================ stats strip
+
+(async () => {
+    try {
+        const stats = await (await fetch('/api/stats')).json();
+        document.getElementById('stats-strip').innerHTML = [
+            ['places', stats.places],
+            ['open', stats.open],
+            ['sources', stats.sources],
+            ['vectors', stats.vectors],
+            ['hours', stats.hours],
+            ['attributes', stats.attributes],
+        ].map(([k, v]) =>
+            `<div class="stat"><span class="num">${fmtNum(v)}</span><span>${k}</span></div>`
+        ).join('');
+    } catch (e) { /* no big deal if it fails */ }
+})();
+
+// ============================================================ map
+
+const map = L.map('map').setView([51.1283, 71.4276], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap',
+}).addTo(map);
+
+const poiLayer = L.markerClusterGroup({
+    showCoverageOnHover: false,
+    spiderfyOnMaxZoom: true,
+    maxClusterRadius: 50,
+    iconCreateFunction: (cluster) => {
+        const n = cluster.getChildCount();
+        const cls = n < 10 ? 'sm' : n < 50 ? 'md' : 'lg';
+        return L.divIcon({
+            html: `<span>${n}</span>`,
+            className: `cluster-icon cluster-${cls}`,
+            iconSize: L.point(36, 36),
+        });
+    },
+}).addTo(map);
+let circleLayer = null;
+const statusEl = document.getElementById('map-status');
+
+function statusColor(status) {
+    if (status === 'open') return '#e53935';
+    if (status === 'permanently_closed') return '#757575';
+    return '#fb8c00';
+}
+
+function freshnessDot(iso) {
+    if (!iso) return { color: '#bbb', label: 'no signal' };
+    const days = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 86400000));
+    if (days <= 14) return { color: '#43a047', label: `verified ${days}d ago` };
+    if (days <= 45) return { color: '#fb8c00', label: `verified ${days}d ago` };
+    return { color: '#e53935', label: `stale · ${days}d ago` };
+}
+
+function popupHtml(r) {
+    const dist = (r.distance_m != null) ? ` · ${Math.round(r.distance_m)}m` : '';
+    const reasonsShort = (r.reasons || [])
+        .filter(x => !x.startsWith('matches category'))
+        .slice(0, 3);
+    const chips = reasonsShort.map(x => `<span class="chip">${escapeHtml(x)}</span>`).join('');
+    const statusChip = r.status && r.status !== 'open'
+        ? `<span class="chip closed">${escapeHtml(r.status)}</span>` : '';
+    const fd = freshnessDot(r.freshness && (r.freshness.status_last_verified_at || r.freshness.profile_last_updated_at));
+    return `<b>${escapeHtml(r.name || '(unnamed)')}</b><br>`
+        + `${escapeHtml(r.category || '')}${dist}`
+        + `<div class="chips">${statusChip}${chips}</div>`
+        + `<div style="font-size:10px; color:#888; margin-top:4px;">`
+        + `<span class="freshness-dot" style="background:${fd.color}"></span>${fd.label}`
+        + `</div>`
+        + `<a class="view" data-id="${escapeHtml(r.id)}" style="display:inline-block;margin-top:6px;color:#1565c0;cursor:pointer;text-decoration:underline;font-size:12px">View profile →</a>`;
+}
+
+function renderPlaces(places) {
+    poiLayer.clearLayers();
+    State.markers = {};
+    places.forEach(r => {
+        const [x, y] = r.geometry.coordinates;
+        const marker = L.circleMarker([y, x], {
+            radius: 6,
+            color: statusColor(r.status),
+            fillColor: statusColor(r.status),
+            fillOpacity: 0.75, weight: 1.5,
+        }).bindPopup(popupHtml(r));
+        marker.on('popupopen', e => {
+            const link = e.popup.getElement().querySelector('a.view');
+            if (link) link.addEventListener('click', () => openProfile(r.id));
+        });
+        marker.addTo(poiLayer);
+        State.markers[r.id] = marker;
+    });
+}
+
+async function searchHere(lat, lon) {
+    State.lastSearchCenter = { lat, lng: lon };
+    document.getElementById('map-redo').classList.remove('show');
+    const f = getFilters();
+    const params = new URLSearchParams({ lat, lon, radius_m: f.radius_m, limit: 200 });
+    if (f.category) params.append('category', f.category);
+    if (f.open_now) params.append('open_now', 'true');
+    if (f.wifi) params.append('wifi', 'true');
+
+    statusEl.textContent = 'Searching…';
+    const t0 = performance.now();
+    const res = await fetch('/api/nearby?' + params);
+    const data = await res.json();
+    const t1 = performance.now();
+
+    if (circleLayer) map.removeLayer(circleLayer);
+    circleLayer = L.circle([lat, lon], {
+        radius: f.radius_m, color: '#1e88e5', weight: 1, fillOpacity: 0.05,
     }).addTo(map);
 
-    L.marker([51.1283, 71.4276]).addTo(map).bindPopup('Baiterek Tower');
+    renderPlaces(data.results);
+    statusEl.textContent = `${data.count} places · ${Math.round(t1 - t0)} ms`;
+}
 
-    const poiLayer = L.layerGroup().addTo(map);
-    let circleLayer = null;
+map.on('click', e => searchHere(e.latlng.lat, e.latlng.lng));
 
-    function renderPlaces(places) {
-        poiLayer.clearLayers();
-        places.forEach(r => {
-            const [x, y] = r.geometry.coordinates;
-            L.circleMarker([y, x], { radius: 5, color: '#e53935', fillOpacity: 0.7 })
-                .bindPopup(`<b>${r.name || '(unnamed)'}</b><br>${r.subtype}<br>${r.distance_m} m away`)
-                .addTo(poiLayer);
+// Show "Search this area" when user moves the map away from the last search
+let redoTimer = null;
+map.on('moveend zoomend', () => {
+    if (!State.lastSearchCenter) return;
+    clearTimeout(redoTimer);
+    redoTimer = setTimeout(() => {
+        const c = map.getCenter();
+        const distM = haversine(c.lat, c.lng, State.lastSearchCenter.lat, State.lastSearchCenter.lng);
+        document.getElementById('map-redo').classList.toggle('show', distM > 200);
+    }, 200);
+});
+
+function haversine(la1, lo1, la2, lo2) {
+    const R = 6371000, p = Math.PI / 180;
+    const dLat = (la2 - la1) * p, dLon = (lo2 - lo1) * p;
+    const a = Math.sin(dLat/2)**2 + Math.cos(la1*p) * Math.cos(la2*p) * Math.sin(dLon/2)**2;
+    return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+document.getElementById('map-redo').addEventListener('click', () => {
+    const c = map.getCenter();
+    searchHere(c.lat, c.lng);
+    State.lastSearchCenter = { lat: c.lat, lng: c.lng };
+    document.getElementById('map-redo').classList.remove('show');
+});
+
+// ============================================================ active filters bar
+
+function renderActiveFilters() {
+    const el = document.getElementById('active-filters');
+    const f = getFilters();
+    const chips = [];
+    if (f.category) chips.push(['category', f.category, () => { document.getElementById('category').value = ''; sync(); }]);
+    if (f.open_now) chips.push(['open now', null, () => { document.getElementById('open_now').checked = false; sync(); }]);
+    if (f.wifi) chips.push(['wifi', null, () => { document.getElementById('wifi').checked = false; sync(); }]);
+    chips.push([`radius ${f.radius_m}m`, null, null]);
+    if (chips.length === 1) {
+        el.innerHTML = '<span class="empty">none — set filters above</span>';
+        return;
+    }
+    el.innerHTML = '<div class="label">Applied to map &amp; chat:</div><div class="chips" id="afc"></div>';
+    const afc = document.getElementById('afc');
+    chips.forEach(([label, val, onclear]) => {
+        const c = document.createElement('span');
+        c.className = 'chip';
+        c.innerHTML = escapeHtml(val ? `${label}: ${val}` : label)
+            + (onclear ? ` <span class="chip-x" title="clear">✕</span>` : '');
+        if (onclear) c.querySelector('.chip-x').addEventListener('click', onclear);
+        afc.appendChild(c);
+    });
+}
+
+function sync() { renderActiveFilters(); }
+['radius', 'category', 'open_now', 'wifi'].forEach(id => {
+    document.getElementById(id).addEventListener('change', sync);
+});
+document.getElementById('radius').addEventListener('input', sync);
+sync();
+
+// ============================================================ tabs
+
+document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === t));
+        document.querySelectorAll('.tab-pane').forEach(p =>
+            p.classList.toggle('active', p.dataset.tab === t.dataset.tab));
+    });
+});
+
+// ============================================================ validate-enrich
+
+document.getElementById('v-from-map').addEventListener('click', () => {
+    const c = map.getCenter();
+    document.getElementById('v-lat').value = c.lat.toFixed(4);
+    document.getElementById('v-lng').value = c.lng.toFixed(4);
+});
+
+document.getElementById('v-sample').addEventListener('click', async () => {
+    // Pick a real seeded place by hitting search and using the first result.
+    const c = map.getCenter();
+    const res = await fetch(`/api/nearby?lat=${c.lat}&lon=${c.lng}&radius_m=500&limit=5`);
+    const data = await res.json();
+    if (data.results && data.results.length) {
+        const r = data.results[0];
+        document.getElementById('v-name').value = r.name;
+        document.getElementById('v-lat').value = r.lat.toFixed(4);
+        document.getElementById('v-lng').value = r.lon.toFixed(4);
+        document.getElementById('v-cat').value = r.category || '';
+    }
+});
+
+function renderScoreBreakdown(breakdown) {
+    if (!breakdown) return '';
+    const rows = Object.entries(breakdown)
+        .sort((a, b) => b[1] - a[1])
+        .map(([feat, score]) => {
+            const pct = Math.round(score * 100);
+            const zero = score === 0 ? 'zero' : '';
+            return `
+                <div class="score-row ${zero}">
+                    <span class="feat">${escapeHtml(feat)}</span>
+                    <div class="bar"><div style="width:${pct}%"></div></div>
+                    <span class="val">${score.toFixed(2)}</span>
+                </div>`;
+        }).join('');
+    return `<div class="score-bars">
+        <div class="label">match score breakdown</div>
+        ${rows}
+    </div>`;
+}
+
+document.getElementById('v-submit').addEventListener('click', async () => {
+    const body = {
+        places: [{
+            customer_place_id: 'demo-' + Date.now(),
+            name: document.getElementById('v-name').value.trim(),
+            address: document.getElementById('v-addr').value.trim() || null,
+            lat: parseFloat(document.getElementById('v-lat').value),
+            lng: parseFloat(document.getElementById('v-lng').value),
+            category: document.getElementById('v-cat').value || null,
+        }],
+        options: { enrich: true, validate_status: true, return_full_profile: false },
+    };
+    const resultEl = document.getElementById('v-result');
+    if (!body.places[0].name) {
+        resultEl.innerHTML = '<div class="result-block no_match">Name is required.</div>';
+        return;
+    }
+    resultEl.innerHTML = '<div class="result-block">Calling /v1/places:validate-enrich…</div>';
+
+    try {
+        const res = await fetch('/v1/places:validate-enrich', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
         });
-    }
-
-    async function search(lat, lon) {
-        const radius = document.getElementById('radius').value;
-        const subtype = document.getElementById('subtype').value;
-        const status = document.getElementById('status');
-
-        const params = new URLSearchParams({ lat, lon, radius_m: radius, limit: 200 });
-        if (subtype) params.append('subtype', subtype);
-
-        status.textContent = 'Searching…';
-        const t0 = performance.now();
-        const res = await fetch('/api/nearby?' + params);
-        const data = await res.json();
-        const t1 = performance.now();
-
-        if (circleLayer) map.removeLayer(circleLayer);
-        circleLayer = L.circle([lat, lon], {
-            radius: parseFloat(radius),
-            color: '#1e88e5', weight: 1, fillOpacity: 0.05,
-        }).addTo(map);
-
-        renderPlaces(data.results);
-        status.textContent = `${data.count} POIs · ${Math.round(t1 - t0)} ms`;
-    }
-
-    map.on('click', e => search(e.latlng.lat, e.latlng.lng));
-
-    // --- Chat ---
-
-    let sessionId = localStorage.getItem('chat_session');
-    if (!sessionId) {
-        sessionId = crypto.randomUUID();
-        localStorage.setItem('chat_session', sessionId);
-    }
-
-    const messagesEl = document.getElementById('messages');
-    const inputEl = document.getElementById('chat-input');
-    const sendBtn = document.getElementById('send-btn');
-    const clearBtn = document.getElementById('clear-btn');
-    const form = document.getElementById('chat-form');
-
-    function addBubble(text, kind) {
-        const div = document.createElement('div');
-        div.className = `bubble ${kind}`;
-        div.textContent = text;
-        messagesEl.appendChild(div);
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-        return div;
-    }
-
-    function addDebug(debug) {
-        const details = document.createElement('details');
-        details.className = 'debug';
-        const summary = document.createElement('summary');
-        summary.textContent = `Show SQL · ${debug.iterations.length} iter · ${debug.total_tokens} tokens · ${debug.total_latency_ms} ms`;
-        details.appendChild(summary);
-
-        debug.iterations.forEach((it, i) => {
-            const meta = document.createElement('div');
-            meta.className = 'debug-meta';
-            const parts = [`#${i + 1} ${it.tool}`];
-            if (typeof it.rows === 'number') parts.push(`${it.rows} rows`);
-            if (typeof it.tool_latency_ms === 'number') parts.push(`tool ${it.tool_latency_ms}ms`);
-            parts.push(`llm ${it.llm_latency_ms}ms`);
-            meta.textContent = parts.join(' · ');
-            details.appendChild(meta);
-
-            if (it.error) {
-                const err = document.createElement('pre');
-                err.textContent = 'ERROR: ' + it.error;
-                details.appendChild(err);
-            }
-            if (it.args) {
-                const args = document.createElement('pre');
-                args.textContent = 'args: ' + JSON.stringify(it.args, null, 2);
-                details.appendChild(args);
-            }
-            if (it.sql) {
-                const sql = document.createElement('pre');
-                sql.textContent = it.sql + '\n\nparams: ' + JSON.stringify(it.params);
-                details.appendChild(sql);
-            }
-        });
-
-        messagesEl.appendChild(details);
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
-
-    form.addEventListener('submit', async e => {
-        e.preventDefault();
-        const message = inputEl.value.trim();
-        if (!message) return;
-
-        addBubble(message, 'user');
-        inputEl.value = '';
-        sendBtn.disabled = true;
-
-        const thinking = addBubble('…', 'assistant');
-
-        try {
-            const center = map.getCenter();
-            const res = await fetch('/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    session_id: sessionId,
-                    message,
-                    map_center: { lat: center.lat, lon: center.lng },
-                }),
-            });
-            const data = await res.json();
-            thinking.remove();
-
-            if (!res.ok) {
-                addBubble(data.detail || `Error ${res.status}`, 'error');
-            } else {
-                addBubble(data.reply || '(no reply)', 'assistant');
-                if (data.debug) addDebug(data.debug);
-                if (data.places && data.places.length) {
-                    renderPlaces(data.places);
-                    if (circleLayer) { map.removeLayer(circleLayer); circleLayer = null; }
-                }
-            }
-        } catch (err) {
-            thinking.remove();
-            addBubble('Network error: ' + err.message, 'error');
-        } finally {
-            sendBtn.disabled = false;
-            inputEl.focus();
+        if (!res.ok) {
+            const err = await res.text();
+            resultEl.innerHTML = `<div class="result-block no_match">Error ${res.status}: ${escapeHtml(err)}</div>`;
+            return;
         }
-    });
+        const data = await res.json();
+        const r = data.results[0];
+        const cls = r.match_decision === 'match' ? 'matched'
+            : r.match_decision === 'low_confidence' ? 'low_confidence' : 'no_match';
+        const decisionLabel = { matched: '✓ MATCH', low_confidence: '◐ LOW CONFIDENCE', no_match: '✗ NO MATCH — created unverified' }[cls];
+        const a = r.attributes || {};
+        const amen = a.amenities || {};
+        const amenChips = Object.entries(amen)
+            .filter(([k, v]) => v && v !== 'none')
+            .slice(0, 6)
+            .map(([k, v]) => `<span class="chip">${escapeHtml(k)}${v === true ? '' : ': ' + escapeHtml(v)}</span>`).join('');
+        const breakdownHtml = renderScoreBreakdown(r.match_breakdown);
+        resultEl.innerHTML = `
+            <div class="result-block ${cls}">
+                <div class="title">${decisionLabel} · confidence ${r.match_confidence}</div>
+                <dl>
+                    <div><dt>canonical id</dt><dd><code style="font-size:10px">${r.canonical_place_id}</code></dd></div>
+                    <div><dt>primary name</dt><dd>${escapeHtml(a.primary_name || '—')}</dd></div>
+                    <div><dt>address</dt><dd>${escapeHtml(a.formatted_address || '—')}</dd></div>
+                    <div><dt>status</dt><dd>${escapeHtml(r.status)} · ${escapeHtml(r.status_reason || '')}</dd></div>
+                    <div><dt>status confidence</dt><dd>${r.status_confidence}</dd></div>
+                </dl>
+                ${breakdownHtml}
+                <div class="chips" style="margin-top:6px;">${amenChips}</div>
+                <a class="view" data-id="${r.canonical_place_id}">View full profile →</a>
+            </div>`;
+        const link = resultEl.querySelector('a.view');
+        if (link) link.addEventListener('click', () => openProfile(r.canonical_place_id));
 
-    clearBtn.addEventListener('click', async () => {
-        try {
-            await fetch('/api/chat/' + encodeURIComponent(sessionId), { method: 'DELETE' });
-        } catch (e) { /* ignore — local clear still proceeds */ }
-        messagesEl.innerHTML = '';
-        addBubble('Chat cleared. Pan the map and ask away.', 'assistant');
+        // also drop a marker
+        if (a.location) {
+            const m = L.marker([a.location.lat, a.location.lng])
+                .addTo(map)
+                .bindPopup(`<b>${escapeHtml(a.primary_name)}</b><br>matched via validate-enrich`);
+            map.setView([a.location.lat, a.location.lng], 16);
+        }
+    } catch (e) {
+        resultEl.innerHTML = `<div class="result-block no_match">Network error: ${escapeHtml(e.message)}</div>`;
+    }
+});
+
+// ============================================================ profile drawer
+
+const drawer = document.getElementById('profile-drawer');
+const drawerBackdrop = document.getElementById('profile-backdrop');
+
+function closeDrawer() {
+    drawer.classList.remove('open');
+    drawerBackdrop.classList.remove('open');
+    State.selectedPlaceId = null;
+}
+document.getElementById('prof-close').addEventListener('click', closeDrawer);
+drawerBackdrop.addEventListener('click', closeDrawer);
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && drawer.classList.contains('open')) closeDrawer();
+});
+
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+function profileSkeleton() {
+    return `
+        <div class="skeleton-block" style="height:60px"></div>
+        <div class="skeleton-block" style="height:140px; margin-top:12px"></div>
+        <div class="skeleton-block" style="height:80px; margin-top:12px"></div>`;
+}
+
+async function openProfile(id) {
+    State.selectedPlaceId = id;
+    document.getElementById('prof-name').textContent = 'Loading…';
+    document.getElementById('prof-meta').textContent = id.slice(0, 8) + '…';
+    document.getElementById('prof-body').innerHTML = profileSkeleton();
+    drawer.classList.add('open');
+    drawerBackdrop.classList.add('open');
+
+    try {
+        const res = await fetch(`/api/place/${id}`);
+        if (!res.ok) {
+            const errText = await res.text().catch(() => '');
+            document.getElementById('prof-body').innerHTML =
+                `<div class="result-block no_match"><b>Error ${res.status}</b><br>${escapeHtml(errText) || 'request failed'}</div>`;
+            document.getElementById('prof-name').textContent = 'Could not load';
+            return;
+        }
+        const p = await res.json();
+        renderProfile(p);
+    } catch (e) {
+        document.getElementById('prof-body').innerHTML =
+            `<div class="result-block no_match"><b>Network error</b><br>${escapeHtml(e.message)}</div>`;
+        document.getElementById('prof-name').textContent = 'Could not load';
+    }
+}
+
+function renderProfile(p) {
+    document.getElementById('prof-name').textContent = p.primary_name;
+    const fd = freshnessDot(p.status_last_verified_at);
+    document.getElementById('prof-meta').innerHTML =
+        `${escapeHtml(p.category_name || p.category || '')} · ${escapeHtml(p.status)}`
+        + ` · <span class="freshness-dot" style="background:${fd.color}"></span>${fd.label}`;
+
+    const body = document.getElementById('prof-body');
+    const today = new Date().getDay();         // 0=Sun..6=Sat
+    const todayIdx = (today + 6) % 7;          // 0=Mon..6=Sun
+
+    // Hours
+    const hoursRows = Array(7).fill('—');
+    (p.hours || []).forEach(h => {
+        hoursRows[h.day_of_week] = `${h.open_time} – ${h.close_time}${h.is_overnight ? ' ⏰' : ''}`;
     });
+    const hoursHtml = `
+        <div class="prof-section">
+            <h3>Hours</h3>
+            <div class="hours-grid">
+                ${DAYS.map((d, i) =>
+                    `<div class="day ${i === todayIdx ? 'today' : ''}">${d}</div>
+                     <div class="${i === todayIdx ? 'today' : ''}">${hoursRows[i]}</div>`
+                ).join('')}
+            </div>
+        </div>`;
+
+    // Amenities
+    const amenList = Object.entries(p.amenities || {})
+        .filter(([k, v]) => v && v !== 'none')
+        .map(([k, v]) => `<span class="chip">${escapeHtml(k)}${v === true ? '' : ': ' + escapeHtml(v)}</span>`)
+        .join('');
+    const amenHtml = amenList ? `
+        <div class="prof-section">
+            <h3>Amenities</h3>
+            <div class="chips">${amenList}</div>
+        </div>` : '';
+
+    // Vibe attributes
+    const vibeAttrs = (p.attributes || []).filter(a => a.namespace === 'vibe');
+    const vibeHtml = vibeAttrs.length ? `
+        <div class="prof-section">
+            <h3>Vibe</h3>
+            <div class="chips">${vibeAttrs.map(a =>
+                `<span class="chip">${escapeHtml(a.key.replace(/_/g, ' '))}</span>`).join('')}</div>
+        </div>` : '';
+
+    // Contact / location
+    const contactHtml = `
+        <div class="prof-section">
+            <h3>Contact</h3>
+            ${p.formatted_address ? `<div class="kv"><span class="k">Address</span>${escapeHtml(p.formatted_address)}</div>` : ''}
+            ${p.phone ? `<div class="kv"><span class="k">Phone</span>${escapeHtml(p.phone)}</div>` : ''}
+            ${p.website ? `<div class="kv"><span class="k">Website</span><a href="${escapeHtml(p.website)}" target="_blank" rel="noopener">${escapeHtml(p.website)}</a></div>` : ''}
+            <div class="kv"><span class="k">Location</span>${p.location.lat.toFixed(5)}, ${p.location.lng.toFixed(5)}</div>
+            <div class="kv"><span class="k">Popularity</span>${p.popularity_score}</div>
+        </div>`;
+
+    // Sources
+    const sourcesHtml = (p.sources || []).length ? `
+        <div class="prof-section">
+            <h3>Sources (${p.sources.length})</h3>
+            ${p.sources.map(s => {
+                const fd2 = freshnessDot(s.last_fetched_at);
+                return `<div class="source-row">
+                    <span class="dot" style="background:${fd2.color}"></span>
+                    <span class="name">${escapeHtml(s.source_name)}${s.is_primary ? ' <span class="chip ok">primary</span>' : ''}</span>
+                    <span class="rel">rel ${s.reliability_score}</span>
+                    <span class="when">${fd2.label}</span>
+                </div>`;
+            }).join('')}
+        </div>` : '';
+
+    // Status history
+    const historyHtml = (p.status_history || []).length ? `
+        <div class="prof-section">
+            <h3>Status History</h3>
+            ${p.status_history.map(h => `
+                <div class="history-row">
+                    ${escapeHtml(h.previous_status || '—')} → <b>${escapeHtml(h.new_status)}</b>
+                    <div class="when">${new Date(h.changed_at).toLocaleString()} · ${escapeHtml(h.change_reason || '')}</div>
+                </div>`).join('')}
+        </div>` : '';
+
+    body.innerHTML = contactHtml + hoursHtml + amenHtml + vibeHtml + sourcesHtml + historyHtml
+        + `<div style="font-size:10px; color:#aaa; margin-top:12px;">GET /v1/places/${p.place_id}?include_sources=true&amp;include_history=true</div>`;
+
+    // pan/zoom map to the place
+    if (p.location) {
+        map.setView([p.location.lat, p.location.lng], 17, { animate: true });
+        if (State.markers[p.place_id]) {
+            State.markers[p.place_id].openPopup();
+        }
+    }
+}
+
+// ============================================================ chat
+
+let sessionId = localStorage.getItem('chat_session');
+if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    localStorage.setItem('chat_session', sessionId);
+}
+
+const messagesEl = document.getElementById('messages');
+const inputEl = document.getElementById('chat-input');
+const sendBtn = document.getElementById('send-btn');
+const clearBtn = document.getElementById('clear-btn');
+const form = document.getElementById('chat-form');
+
+function addBubble(text, kind) {
+    const div = document.createElement('div');
+    div.className = `bubble ${kind}`;
+    div.textContent = text;
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return div;
+}
+
+function addPlaceCard(r) {
+    const div = document.createElement('div');
+    div.className = 'place-card';
+    div.dataset.id = r.id;
+    const fd = freshnessDot(r.freshness && (r.freshness.status_last_verified_at || r.freshness.profile_last_updated_at));
+    const reasonsShort = (r.reasons || [])
+        .filter(x => !x.startsWith('matches category'))
+        .slice(0, 3);
+    const chips = reasonsShort.map(x => `<span class="chip">${escapeHtml(x)}</span>`).join('');
+    const statusChip = r.status && r.status !== 'open'
+        ? `<span class="chip closed">${escapeHtml(r.status)}</span>` : '';
+    div.innerHTML =
+        `<div class="title">${escapeHtml(r.name)}</div>`
+        + `<div class="sub">${escapeHtml(r.category || '')} · ${r.distance_m != null ? Math.round(r.distance_m) + 'm' : ''}</div>`
+        + `<div class="chips">${statusChip}${chips}</div>`
+        + `<div class="freshness"><span class="freshness-dot" style="background:${fd.color}"></span>${fd.label}</div>`;
+    div.addEventListener('click', () => openProfile(r.id));
+    messagesEl.appendChild(div);
+}
+
+function addDebug(debug) {
+    const it = debug.iterations[0] || {};
+    const meta = document.createElement('div');
+    meta.className = 'meta-line';
+
+    const parts = [];
+    if (it.semantic) parts.push('<span class="pill semantic">✦ semantic</span>');
+    else if (it.tool) parts.push('<span class="pill struct">▣ structured</span>');
+    if (typeof it.rows === 'number') parts.push(`${it.rows} results`);
+    if (typeof it.tool_latency_ms === 'number') parts.push(`db ${it.tool_latency_ms}ms`);
+    parts.push(`llm ${debug.total_latency_ms}ms`);
+    parts.push(`${debug.total_tokens} tokens`);
+
+    meta.innerHTML = parts.join(' · ')
+        + ' · <button class="expand" type="button">args</button>';
+    messagesEl.appendChild(meta);
+
+    const pre = document.createElement('div');
+    pre.className = 'meta-pre';
+    pre.textContent = JSON.stringify(it.args || {}, null, 2)
+        + (it.error ? '\n\nERROR: ' + it.error : '');
+    messagesEl.appendChild(pre);
+
+    meta.querySelector('.expand').addEventListener('click', () => {
+        pre.classList.toggle('show');
+    });
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+async function sendMessage(text) {
+    addBubble(text, 'user');
+    sendBtn.disabled = true;
+    const thinking = addBubble('…', 'assistant');
+    try {
+        const center = map.getCenter();
+        const f = getFilters();
+        const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                session_id: sessionId,
+                message: text,
+                map_center: { lat: center.lat, lon: center.lng },
+                filters: {
+                    radius_m: f.radius_m,
+                    category: f.category,
+                    open_now: f.open_now,
+                    wifi: f.wifi,
+                },
+            }),
+        });
+        const data = await res.json();
+        thinking.remove();
+        if (!res.ok) {
+            addBubble(data.detail || `Error ${res.status}`, 'error');
+        } else {
+            addBubble(data.reply || '(no reply)', 'assistant');
+            if (data.places && data.places.length) {
+                data.places.slice(0, 5).forEach(addPlaceCard);
+                renderPlaces(data.places);
+                if (circleLayer) { map.removeLayer(circleLayer); circleLayer = null; }
+            }
+            if (data.debug) addDebug(data.debug);
+        }
+    } catch (err) {
+        thinking.remove();
+        addBubble('Network error: ' + err.message, 'error');
+    } finally {
+        sendBtn.disabled = false;
+        inputEl.focus();
+    }
+}
+
+form.addEventListener('submit', e => {
+    e.preventDefault();
+    const text = inputEl.value.trim();
+    if (!text) return;
+    inputEl.value = '';
+    sendMessage(text);
+});
+
+// example chips
+messagesEl.addEventListener('click', e => {
+    if (e.target.classList.contains('example')) sendMessage(e.target.textContent.trim());
+});
+
+clearBtn.addEventListener('click', async () => {
+    try { await fetch('/api/chat/' + encodeURIComponent(sessionId), { method: 'DELETE' }); } catch (e) {}
+    messagesEl.innerHTML = '';
+    addBubble('Chat cleared. Pan the map and ask away.', 'assistant');
+});
 </script>
 </body>
 </html>
