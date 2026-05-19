@@ -532,6 +532,24 @@ function escapeHtml(s) {
     }[c]));
 }
 
+// Reject non-http(s) URLs so a `javascript:` value in p.website can't fire
+// an XSS payload when the link is clicked.
+function safeUrl(u) {
+    try {
+        const url = new URL(u);
+        return (url.protocol === 'http:' || url.protocol === 'https:') ? u : '';
+    } catch (e) {
+        return '';
+    }
+}
+
+// Server runs in Asia/Almaty (DEFAULT_TZ); the highlighted "today" cell in
+// the hours grid must agree, regardless of the viewer's local timezone.
+function dayInTzMonStart(tz) {
+    const weekday = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' }).format(new Date());
+    return { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 }[weekday];
+}
+
 function fmtNum(n) {
     return n.toLocaleString();
 }
@@ -897,8 +915,7 @@ function renderProfile(p) {
         + ` · <span class="freshness-dot" style="background:${fd.color}"></span>${fd.label}`;
 
     const body = document.getElementById('prof-body');
-    const today = new Date().getDay();         // 0=Sun..6=Sat
-    const todayIdx = (today + 6) % 7;          // 0=Mon..6=Sun
+    const todayIdx = dayInTzMonStart('Asia/Almaty');   // align with server tz
 
     // Hours
     const hoursRows = Array(7).fill('—');
@@ -942,7 +959,7 @@ function renderProfile(p) {
             <h3>Contact</h3>
             ${p.formatted_address ? `<div class="kv"><span class="k">Address</span>${escapeHtml(p.formatted_address)}</div>` : ''}
             ${p.phone ? `<div class="kv"><span class="k">Phone</span>${escapeHtml(p.phone)}</div>` : ''}
-            ${p.website ? `<div class="kv"><span class="k">Website</span><a href="${escapeHtml(p.website)}" target="_blank" rel="noopener">${escapeHtml(p.website)}</a></div>` : ''}
+            ${p.website && safeUrl(p.website) ? `<div class="kv"><span class="k">Website</span><a href="${escapeHtml(safeUrl(p.website))}" target="_blank" rel="noopener">${escapeHtml(p.website)}</a></div>` : ''}
             <div class="kv"><span class="k">Location</span>${p.location.lat.toFixed(5)}, ${p.location.lng.toFixed(5)}</div>
             <div class="kv"><span class="k">Popularity</span>${p.popularity_score}</div>
         </div>`;

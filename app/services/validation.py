@@ -66,6 +66,7 @@ class StatusVerdict:
     confidence: float
     reason: str
     sources_considered: int
+    triggering_source_id: int | None = None
 
 
 def _norm_signal(s: str | None) -> str:
@@ -100,6 +101,7 @@ def _score_verdict(sources: list[dict], now: datetime | None = None) -> StatusVe
             "permanently_closed", conf,
             f"closed signal from {best['source_name']} (rel {best['reliability_score']:.2f})",
             len(sources),
+            triggering_source_id=best.get("id"),
         )
 
     # (3) Score an "open" candidate verdict via the formula.
@@ -125,6 +127,7 @@ def _score_verdict(sources: list[dict], now: datetime | None = None) -> StatusVe
     candidate = "open" if confidence >= OPEN_FLOOR else "unverified"
 
     # Reason: prefer the most-recent agreeing source.
+    triggering_source_id: int | None = None
     if agreeing:
         agreeing_with_ts = [s for s in agreeing if s["last_fetched_at"]]
         if agreeing_with_ts:
@@ -136,20 +139,22 @@ def _score_verdict(sources: list[dict], now: datetime | None = None) -> StatusVe
         else:
             top = max(agreeing, key=lambda s: s["reliability_score"])
             reason = f"active on {top['source_name']} (no timestamp)"
+        triggering_source_id = top.get("id")
     else:
         reason = "all sources dissent"
 
     if candidate == "unverified":
         reason = f"low confidence ({confidence:.2f}); " + reason
 
-    return StatusVerdict(candidate, confidence, reason, len(sources))
+    return StatusVerdict(candidate, confidence, reason, len(sources),
+                         triggering_source_id=triggering_source_id)
 
 
 def _fetch_sources(conn, place_id: str) -> list[dict]:
     with conn.cursor() as cur:
         cur.execute(
             """
-            SELECT source_type::text, source_name, last_fetched_at,
+            SELECT id, source_type::text, source_name, last_fetched_at,
                    reliability_score, is_primary, status_signal
             FROM place_sources WHERE place_id = %s
             """,
@@ -157,9 +162,9 @@ def _fetch_sources(conn, place_id: str) -> list[dict]:
         )
         return [
             {
-                "source_type": r[0], "source_name": r[1], "last_fetched_at": r[2],
-                "reliability_score": float(r[3]), "is_primary": r[4],
-                "status_signal": r[5],
+                "id": r[0], "source_type": r[1], "source_name": r[2], "last_fetched_at": r[3],
+                "reliability_score": float(r[4]), "is_primary": r[5],
+                "status_signal": r[6],
             }
             for r in cur.fetchall()
         ]
@@ -205,8 +210,9 @@ def _persist(pool, place_id: str, prev_status: str, verdict: StatusVerdict) -> N
             cur.execute(
                 """
                 INSERT INTO place_status_history
-                    (place_id, previous_status, new_status, change_reason)
-                VALUES (%s, %s::place_status, %s::place_status, %s)
+                    (place_id, previous_status, new_status, change_reason, source_id)
+                VALUES (%s, %s::place_status, %s::place_status, %s, %s)
                 """,
-                (place_id, prev_status, verdict.status, verdict.reason),
+                (place_id, prev_status, verdict.status, verdict.reason,
+                 verdict.triggering_source_id),
             )

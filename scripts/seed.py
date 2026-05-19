@@ -369,6 +369,7 @@ def main():
                     hours_rows.append((str(pid), d, o, c, is_ov))
 
                 for ns, k, v in vibe_attributes(category, rnd):
+                    # source_id appended after sources are inserted (see below).
                     attribute_rows.append((str(pid), ns, k, "boolean", None, None, True, None))
 
                 for stype, sname, surl, last_fetched, rel, is_primary, signal in sources_for(rnd, status):
@@ -421,25 +422,41 @@ def main():
                 hours_rows,
             )
 
+            # Sources go in BEFORE attributes so we can attach a real source_id
+            # to each attribute row (vibe attribute provenance).
+            print(f"  inserting {len(source_rows)} source rows...")
+            sources_by_place: dict[str, list[int]] = {}
+            CHUNK = 1000
+            for i in range(0, len(source_rows), CHUNK):
+                chunk = source_rows[i:i + CHUNK]
+                placeholders = ",".join(
+                    ["(%s, %s::source_type, %s, %s, %s, %s, %s, %s)"] * len(chunk)
+                )
+                sql = (
+                    "INSERT INTO place_sources "
+                    "(place_id, source_type, source_name, source_url, last_fetched_at, "
+                    "reliability_score, is_primary, status_signal) "
+                    f"VALUES {placeholders} "
+                    "RETURNING id, place_id::text"
+                )
+                flat = [v for row in chunk for v in row]
+                cur.execute(sql, flat)
+                for sid, pid_str in cur.fetchall():
+                    sources_by_place.setdefault(pid_str, []).append(sid)
+
             print(f"  inserting {len(attribute_rows)} attribute rows...")
+            attribute_rows_with_source = [
+                row + (rnd.choice(sources_by_place[row[0]]) if sources_by_place.get(row[0]) else None,)
+                for row in attribute_rows
+            ]
             cur.executemany(
                 """
                 INSERT INTO place_attributes
-                    (place_id, namespace, key, value_type, value_string, value_number, value_boolean, value_json)
-                VALUES (%s, %s, %s, %s::attribute_value_type, %s, %s, %s, %s)
+                    (place_id, namespace, key, value_type, value_string, value_number,
+                     value_boolean, value_json, source_id)
+                VALUES (%s, %s, %s, %s::attribute_value_type, %s, %s, %s, %s, %s)
                 """,
-                attribute_rows,
-            )
-
-            print(f"  inserting {len(source_rows)} source rows...")
-            cur.executemany(
-                """
-                INSERT INTO place_sources
-                    (place_id, source_type, source_name, source_url, last_fetched_at,
-                     reliability_score, is_primary, status_signal)
-                VALUES (%s, %s::source_type, %s, %s, %s, %s, %s, %s)
-                """,
-                source_rows,
+                attribute_rows_with_source,
             )
 
             cur.execute("ANALYZE places")

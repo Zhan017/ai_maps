@@ -226,7 +226,7 @@ def _hybrid_score(row: dict, query: SearchQuery) -> float:
 
 
 def search(pool, openai_client, query: SearchQuery) -> dict:
-    use_semantic = bool(query.q and openai_client)
+    use_semantic = bool(query.q and query.q.strip() and openai_client)
     if use_semantic:
         rows = _semantic_search(pool, openai_client, query)
         scored = [(_hybrid_score(r, query), r) for r in rows]

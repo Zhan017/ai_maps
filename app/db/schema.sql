@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS places (
     email                    TEXT,
     country_code             TEXT,
     time_zone                TEXT,
-    popularity_score         NUMERIC(5,3) NOT NULL DEFAULT 0.0,
+    popularity_score         NUMERIC(4,3) NOT NULL DEFAULT 0.0,
     source_priority          TEXT
 );
 

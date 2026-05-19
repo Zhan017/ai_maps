@@ -141,6 +141,8 @@ def validate_enrich(
                 with pool.connection() as conn, conn.cursor() as cur:
                     cur.execute("SELECT status::text, status_confidence, status_reason FROM places WHERE id = %s", (place_id,))
                     row = cur.fetchone()
+                if row is None:
+                    raise HTTPException(404, f"matched place_id {place_id} no longer exists")
                 status, status_conf, status_reason = row[0], float(row[1]), row[2]
 
         _record_customer_ref(pool, customer["id"], p.customer_place_id, place_id, ref_status)
