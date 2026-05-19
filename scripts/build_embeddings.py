@@ -29,6 +29,8 @@ def gather_text(conn, place_id: str) -> str | None:
         return None
     profile = {
         "primary_name": core["primary_name"],
+        "brand_name": core["brand_name"],
+        "name_local": core["name_local"],
         "category_name": core["category_name"],
         "formatted_address": core["formatted_address"],
         "amenities": fetch_amenities(conn, place_id),

@@ -50,12 +50,20 @@ class MatchResult:
     candidates: list[dict]
 
 
-def _name_score(input_name: str, cand_name: str, cand_brand: str | None) -> float:
+def _name_score(input_name: str, cand_name: str, cand_brand: str | None,
+                cand_local: str | None = None) -> float:
+    """Take max() across primary_name, brand_name, and name_local.
+
+    name_local enables cross-script matching: a customer sending Cyrillic
+    "Кофе Лайк" can match a candidate whose primary_name is "Coffee Like"
+    but whose name_local is "Кофе Лайк".
+    """
     a = normalize_name(input_name)
-    b = normalize_name(cand_name)
-    s = fuzz.token_set_ratio(a, b) / 100.0
+    s = fuzz.token_set_ratio(a, normalize_name(cand_name)) / 100.0
     if cand_brand:
         s = max(s, fuzz.token_set_ratio(a, normalize_name(cand_brand)) / 100.0)
+    if cand_local:
+        s = max(s, fuzz.token_set_ratio(a, normalize_name(cand_local)) / 100.0)
     return s
 
 
@@ -90,7 +98,7 @@ def score(inp: MatchInput, cand: dict) -> tuple[float, dict]:
     contribs: dict[str, tuple[float, float]] = {}  # feature -> (score, weight)
 
     contribs["name"] = (
-        _name_score(inp.name, cand["primary_name"], cand.get("brand_name")),
+        _name_score(inp.name, cand["primary_name"], cand.get("brand_name"), cand.get("name_local")),
         WEIGHTS["name"],
     )
 
@@ -123,7 +131,7 @@ def candidates(pool, inp: MatchInput, radius_m: int = CANDIDATE_RADIUS_M) -> lis
         with pool.connection() as conn, conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT p.id::text, p.primary_name, p.brand_name, p.phone_number, p.primary_website_url,
+                SELECT p.id::text, p.primary_name, p.name_local, p.brand_name, p.phone_number, p.primary_website_url,
                        pa.formatted_address, pa.street, pa.house_number, pa.city,
                        NULL::float8 AS meters, p.category_id, pc.code AS category_code
                 FROM places p
@@ -143,7 +151,7 @@ def candidates(pool, inp: MatchInput, radius_m: int = CANDIDATE_RADIUS_M) -> lis
             )
             rows = cur.fetchall()
     cols = [
-        "id", "primary_name", "brand_name", "phone_number", "primary_website_url",
+        "id", "primary_name", "name_local", "brand_name", "phone_number", "primary_website_url",
         "formatted_address", "street", "house_number", "city",
         "meters", "category_id", "category_code",
     ]

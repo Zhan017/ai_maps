@@ -43,19 +43,24 @@ class SearchQuery:
 
 def _open_now_clause(tz_name: str = DEFAULT_TZ) -> tuple[str, tuple]:
     now = datetime.now(ZoneInfo(tz_name))
+    today = now.date()
+    # valid_from / valid_to support seasonal hours (e.g. "winter hours from
+    # Nov 1 to Mar 31"); NULL means always-on.
     return (
         """
         EXISTS (
             SELECT 1 FROM place_hours h
             WHERE h.place_id = p.id
               AND h.day_of_week = %s
+              AND (h.valid_from IS NULL OR h.valid_from <= %s::date)
+              AND (h.valid_to   IS NULL OR h.valid_to   >= %s::date)
               AND (
                   (NOT h.is_overnight AND h.open_time <= %s AND %s < h.close_time)
                   OR (h.is_overnight AND (%s >= h.open_time OR %s < h.close_time))
               )
         )
         """,
-        (now.weekday(), now.time(), now.time(), now.time(), now.time()),
+        (now.weekday(), today, today, now.time(), now.time(), now.time(), now.time()),
     )
 
 

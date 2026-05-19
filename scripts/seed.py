@@ -307,6 +307,8 @@ def main():
             now = datetime.now(timezone.utc)
             for src in source_iter:
                 pid = uuid.uuid4()
+                name_local: str | None = None
+                brand_name: str | None = None
                 if src is None:
                     category = rnd.choice(leaf_codes)
                     name = f"{rnd.choice(NAMES)} {rnd.choice(SUFFIXES)}"
@@ -320,6 +322,17 @@ def main():
                     if category not in code_to_id:
                         continue  # category not in our schema
                     name = src["name"]
+                    # OSM `name:en` becomes our second-script alias; the matcher
+                    # uses it for cross-script fuzzy matching (Item 14).
+                    name_en = src.get("name_en")
+                    if name_en and name_en != name:
+                        name_local = name_en
+                    # OSM `brand` tag — chain-store signal that powers chain
+                    # queries through both the matcher (Commit 2) and the
+                    # embedding text (Commit 3, Item 8).
+                    brand = src.get("brand")
+                    if brand and brand != name:
+                        brand_name = brand
                     lon = src["lng"]
                     lat = src["lat"]
                     street = src.get("addr_street") or rnd.choice(STREET_NAMES)
@@ -348,7 +361,7 @@ def main():
                 popularity = popularity_for(category, rnd)
 
                 place_rows.append((
-                    str(pid), name, code_to_id[category],
+                    str(pid), name, name_local, brand_name, code_to_id[category],
                     status, status_conf, "seeded mock",
                     verified, lon, lat, website, phone,
                     "KZ", "Asia/Almaty", popularity,
@@ -379,11 +392,11 @@ def main():
             cur.executemany(
                 """
                 INSERT INTO places
-                    (id, primary_name, category_id, status, status_confidence,
+                    (id, primary_name, name_local, brand_name, category_id, status, status_confidence,
                      status_reason, status_last_verified_at, location,
                      primary_website_url, phone_number, country_code, time_zone,
                      popularity_score)
-                VALUES (%s, %s, %s, %s::place_status, %s, %s, %s,
+                VALUES (%s, %s, %s, %s, %s, %s::place_status, %s, %s, %s,
                         ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography,
                         %s, %s, %s, %s, %s)
                 """,

@@ -5,7 +5,7 @@ import json
 from typing import Any
 
 NEARBY_CANDIDATES_SQL = """
-    SELECT p.id::text, p.primary_name, p.brand_name, p.phone_number, p.primary_website_url,
+    SELECT p.id::text, p.primary_name, p.name_local, p.brand_name, p.phone_number, p.primary_website_url,
            pa.formatted_address, pa.street, pa.house_number, pa.city,
            ST_Distance(p.location, ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography) AS meters,
            p.category_id, pc.code AS category_code
@@ -110,7 +110,7 @@ def fetch_attributes(conn, place_id: str) -> list[dict]:
             """
             SELECT namespace, key, value_type::text,
                    value_string, value_number, value_boolean, value_json,
-                   last_updated_at
+                   updated_at
             FROM place_attributes WHERE place_id = %s
             ORDER BY namespace, key
             """,
@@ -132,7 +132,7 @@ def fetch_attributes(conn, place_id: str) -> list[dict]:
             "namespace": ns,
             "key": key,
             "value": value,
-            "last_updated_at": ts.isoformat() if ts else None,
+            "updated_at": ts.isoformat() if ts else None,
         })
     return out
 

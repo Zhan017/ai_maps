@@ -119,7 +119,7 @@ erDiagram
         boolean value_boolean
         jsonb value_json
         int source_id FK "which source asserted this"
-        timestamptz last_updated_at
+        timestamptz updated_at
     }
 
     PLACE_STATUS_HISTORY {
@@ -386,7 +386,7 @@ opens 17:00, closes 02:00 next day). The `open_now` check in
 ```
 id PK · place_id FK · namespace · key · value_type
 value_string · value_number · value_boolean · value_json
-source_id FK · last_updated_at
+source_id FK · updated_at
 UNIQUE (place_id, namespace, key)
 ```
 

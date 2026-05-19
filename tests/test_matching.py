@@ -34,6 +34,22 @@ def test_name_mismatch_yields_low_score():
     assert s < 0.6
 
 
+def test_name_local_matches_cross_script():
+    # Candidate's primary_name is Latin, name_local is Cyrillic.
+    # Customer sends the Cyrillic form — _name_score should max() across
+    # primary/brand/local and score high.
+    s_cyrillic, b_cyrillic = score(
+        MatchInput(name="Кофе Лайк", lat=51.13, lng=71.43),
+        _cand(primary_name="Coffee Like", name_local="Кофе Лайк", meters=20.0),
+    )
+    s_no_local, _ = score(
+        MatchInput(name="Кофе Лайк", lat=51.13, lng=71.43),
+        _cand(primary_name="Coffee Like", name_local=None, meters=20.0),
+    )
+    assert b_cyrillic["name"] >= 0.85
+    assert s_cyrillic > s_no_local
+
+
 def test_wrong_phone_drags_score_down():
     s_match, _ = score(
         MatchInput(name="Baiterek Cafe", phone="+7-7172-100-2000", lat=51.13, lng=71.43),

@@ -196,7 +196,7 @@ Flexible “infinite attributes” store (key‑value).
 - `value_type` – enum: `string`, `number`, `boolean`, `json`.
 - `value_string`, `value_number`, `value_boolean`, `value_json`.
 - `source_id` (FK to `place_sources`).
-- `last_updated_at`.
+- `updated_at`.
 
 #### `place_status_history`
 
@@ -221,7 +221,7 @@ etc.).
   `frequented_by`.
 - `confidence`.
 - `source_id`.
-- `last_updated_at`.
+- `updated_at`.
 
 #### `customer_accounts` and `customer_place_refs`
 

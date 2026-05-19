@@ -16,8 +16,17 @@ from app.core.config import EMBEDDING_MODEL
 
 def serialize_place(profile: dict) -> str:
     parts: list[str] = []
-    if profile.get("primary_name"):
-        parts.append(profile["primary_name"])
+    primary = profile.get("primary_name")
+    if primary:
+        parts.append(primary)
+    # Brand alias and local-language alias both feed the ANN signal for chain
+    # queries ("Halyk", "Кофе Лайк"). Deduplicated against previously emitted
+    # parts so identical strings don't bloat the embedding text.
+    seen = {primary} if primary else set()
+    for alias in (profile.get("brand_name"), profile.get("name_local")):
+        if alias and alias not in seen:
+            parts.append(alias)
+            seen.add(alias)
     if profile.get("category_name"):
         parts.append(profile["category_name"])
     if profile.get("formatted_address"):

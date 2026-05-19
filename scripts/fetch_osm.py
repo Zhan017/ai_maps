@@ -119,6 +119,7 @@ def parse(raw: dict) -> list[dict]:
             "osm_id": f"{el['type']}/{el['id']}",
             "name": name,
             "name_en": tags.get("name:en"),
+            "brand": tags.get("brand") or tags.get("brand:en"),
             "lat": lat,
             "lng": lng,
             "category": cat,

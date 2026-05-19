@@ -153,7 +153,7 @@ CREATE TABLE IF NOT EXISTS place_attributes (
     value_boolean   BOOLEAN,
     value_json      JSONB,
     source_id       INTEGER REFERENCES place_sources(id) ON DELETE SET NULL,
-    last_updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE (place_id, namespace, key)
 );
 

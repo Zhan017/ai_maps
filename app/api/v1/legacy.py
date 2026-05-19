@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
 import time
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -69,6 +70,12 @@ TOOLS = [
 MAX_HISTORY = 40
 MAX_LOOP_ITERATIONS = 4
 
+# Single-worker assumption: cross-worker session continuity would require Redis.
+# The lock here protects the dict itself against concurrent registry mutations
+# (setdefault / pop). Critical sections do in-memory dict ops only — no awaits,
+# no I/O. Concurrent requests with the same session_id will still interleave
+# their list mutations; that's an existing demo limitation, not a regression.
+_SESSIONS_LOCK = threading.Lock()
 SESSIONS: dict[str, list[dict]] = {}
 
 
@@ -118,15 +125,14 @@ def _result_to_marker(r: dict) -> dict:
     }
 
 
-_STATS_CACHE: dict | None = None
-
-
 @router.get("/api/stats")
 def stats(pool=Depends(get_pool)):
-    """Aggregate counts for the demo stats strip. Cached in-process."""
-    global _STATS_CACHE
-    if _STATS_CACHE is not None:
-        return _STATS_CACHE
+    """Aggregate counts for the demo stats strip.
+
+    Not cached: the underlying query runs in ~4ms warm on the current corpus
+    (EXPLAIN ANALYZE confirmed). Caching it added stale-stats UX after reseed
+    without buying meaningful latency back.
+    """
     with pool.connection() as conn, conn.cursor() as cur:
         cur.execute("""
             SELECT
@@ -139,12 +145,11 @@ def stats(pool=Depends(get_pool)):
                 (SELECT count(*) FROM place_categories WHERE parent_id IS NOT NULL)
         """)
         row = cur.fetchone()
-    _STATS_CACHE = {
+    return {
         "places": row[0], "open": row[1], "sources": row[2],
         "vectors": row[3], "hours": row[4], "attributes": row[5],
         "categories": row[6],
     }
-    return _STATS_CACHE
 
 
 @router.get("/api/place/{place_id}")
@@ -195,9 +200,10 @@ def chat(
     if openai_client is None:
         raise HTTPException(503, "OPENAI_API_KEY not configured on server")
 
-    history = SESSIONS.setdefault(
-        req.session_id, [{"role": "system", "content": SYSTEM_PROMPT}]
-    )
+    with _SESSIONS_LOCK:
+        history = SESSIONS.setdefault(
+            req.session_id, [{"role": "system", "content": SYSTEM_PROMPT}]
+        )
     user_content = req.message
     if req.filters:
         active = {k: v for k, v in req.filters.model_dump().items() if v not in (None, False, "")}
@@ -330,5 +336,6 @@ def chat(
 
 @router.delete("/api/chat/{session_id}")
 def clear_chat(session_id: str):
-    SESSIONS.pop(session_id, None)
+    with _SESSIONS_LOCK:
+        SESSIONS.pop(session_id, None)
     return {"cleared": True}

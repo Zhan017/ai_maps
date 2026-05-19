@@ -13,11 +13,11 @@ Eval set: `tests/data/eval_queries.jsonl` (30 hand-authored + 50 templated = 80 
 
 | mode | recall@5 | recall@10 | MRR | Jaccard@5 vs gold | p50 latency | p95 latency |
 |---|---|---|---|---|---|---|
-| `pure_ann` | 0.25 | 0.39 | 0.48 | 0.16 | 395ms | 661ms |
-| `pure_geo` | 0.15 | 0.23 | 0.24 | 0.10 | 9ms | 60ms |
-| `pure_pop` | 0.15 | 0.23 | 0.24 | 0.10 | 8ms | 36ms |
-| `structured_only` | 0.42 | 0.58 | 0.66 | 0.31 | 5ms | 8ms |
-| `hybrid_default` | 1.00 | 1.00 | 1.00 | 1.00 | 393ms | 867ms |
+| `pure_ann` | 0.25 | 0.39 | 0.46 | 0.16 | 252ms | 449ms |
+| `pure_geo` | 0.16 | 0.23 | 0.24 | 0.10 | 8ms | 53ms |
+| `pure_pop` | 0.16 | 0.23 | 0.24 | 0.10 | 7ms | 58ms |
+| `structured_only` | 0.42 | 0.60 | 0.67 | 0.31 | 5ms | 10ms |
+| `hybrid_default` | 1.00 | 1.00 | 1.00 | 1.00 | 251ms | 435ms |
 
 ## Reading the table
 
@@ -30,10 +30,16 @@ Eval set: `tests/data/eval_queries.jsonl` (30 hand-authored + 50 templated = 80 
 
 ## What the numbers say
 
+Auto-filled at run time. Re-running `python -m scripts.eval` regenerates this section.
+
+<!-- AUTO:END -->
+
+## Reading the table
+
 Three findings worth highlighting:
 
 **(1) `structured_only` is the production insight.** Recovers 42% of hybrid's
-top-5 and 58% of top-10 at **5ms p50** — ~80× faster than hybrid (393ms p50,
+top-5 and 60% of top-10 at **5ms p50** — ~50× faster than hybrid (251ms p50,
 which is dominated by the OpenAI embedding round-trip). For queries where
 the agent already knows the category ("pharmacies open now", "ATMs near
 me"), routing to the structured path costs nothing in quality terms that
@@ -43,18 +49,18 @@ and pick the cheap path. The gap from 42→100 is the value of pgvector for
 queries where semantic-vibe disambiguation actually matters.
 
 **(2) `pure_ann` (0.25 recall@5) confirms semantic alone is insufficient.**
-ANN retrieves a reasonable *set* (recall@10 = 0.39, MRR = 0.48 — the right
+ANN retrieves a reasonable *set* (recall@10 = 0.39, MRR ≈ 0.46 — the right
 item is often #1 or #2) but consistently misses pieces of hybrid's top-5.
 The miss is structured: hybrid's distance and popularity weights are
 pulling in nearby + popular places that ANN alone ranks lower. That 25%
 floor is exactly what you'd expect from "semantic without geo grounding"
 on a city-scoped corpus.
 
-**(3) `pure_geo` and `pure_pop` are indistinguishable (both 0.15 recall@5).**
+**(3) `pure_geo` and `pure_pop` are indistinguishable (both 0.16 recall@5).**
 Without a query, ranking by distance or popularity reduces to "give me
 *any* nearby/popular place" — which essentially randomizes against the
 hybrid gold across categories. This is the floor and tells you the
-absolute minimum any "ranker" achieves on this eval. Anything above 0.15
+absolute minimum any "ranker" achieves on this eval. Anything above 0.16
 is doing real work.
 
 ## Caveats acknowledged
@@ -66,10 +72,26 @@ is doing real work.
   surface novel relevant items not in hybrid's pool are penalized. A
   pooled-judgment v2 (top-K from each mode, LLM-or-human labeled) would
   fix this. Roughly 1 day of follow-up work.
-- 80 queries is small. Variance estimate: std dev across 5 modes' recall@5
-  values is ~0.3 with n=80 → 95% CI ~±0.07. So the 0.42 vs 0.25 gap is
-  real; the 0.15 vs 0.15 tie between pure_geo and pure_pop is also real.
+- 80 queries is small. The 0.42 vs 0.25 gap between structured_only and
+  pure_ann is real; the 0.16 vs 0.16 tie between pure_geo and pure_pop
+  is also real.
 - Latency is local-loopback (Docker → host). Production with managed Postgres
   + OpenAI would be ~50ms higher on each leg.
 
-<!-- AUTO:END -->
+## Item 8 (Commit 3) — alias signals in embedding text
+
+Embedding text now includes `brand_name` and `name_local` when distinct from
+`primary_name` (so "Halyk Bank" branches with `brand_name="Halyk Bank"` add no
+duplicate token; "Банк ЦентрКредит" with `brand_name="Bank CenterCredit"`
+gains a cross-script alias).
+
+Coverage in the current OSM seed: 21 places have `brand_name` distinct from
+primary, 74 have `name_local`. The wiring is correct (verified by inspecting
+serialized strings), but the global `pure_ann` recall@5 is unchanged at 0.25
+because the alias signal only differentiates ~8% of the corpus and the
+bootstrapped gold set is hybrid-ranked, which already finds chain places
+through geo+pop weights. The change is best understood as **infrastructure
+ready for multi-source ingest**: when real ingest backfills more brand and
+local-language aliases (especially for restaurants and cafes, where coverage
+is currently thinnest), the embedding signal will pay off without further
+code changes.
