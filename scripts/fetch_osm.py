@@ -75,7 +75,7 @@ def fetch() -> dict:
         data=("data=" + urllib.parse.quote(query)).encode("utf-8"),
         headers={
             "Content-Type": "application/x-www-form-urlencoded",
-            "User-Agent": "voygr-replica-demo/0.1 (https://github.com/local-dev; not for production)",
+            "User-Agent": "voygr-inspired-pet-project/0.1 (https://github.com/local-dev; not for production)",
             "Accept": "application/json",
         },
     )

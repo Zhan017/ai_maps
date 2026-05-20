@@ -1,4 +1,4 @@
-# VOYGR Replica – Technical Specification (FastAPI + Postgres + PostGIS)
+# Technical Specification — pet project inspired by VOYGR (FastAPI + Postgres + PostGIS)
 
 This document describes a full architecture and implementation plan to build a
 VOYGR‑like product: an API that validates, enriches, and serves high‑fidelity

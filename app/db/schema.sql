@@ -1,4 +1,4 @@
--- VOYGR replica schema (Phase 1 + selected Phase 2/3)
+-- Schema inspired by VOYGR (Phase 1 + selected Phase 2/3)
 
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS pgcrypto;

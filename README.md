@@ -1,7 +1,7 @@
-# VOYGR Replica — place intelligence for Astana
+# Pet project inspired by VOYGR — place intelligence for Astana
 
 > Google Maps coverage is patchy in Central Asia — exactly the gap VOYGR is
-> built to fill. This is a place-intelligence replica seeded with real OSM
+> built to fill. This is a pet project inspired by VOYGR, seeded with real OSM
 > data for Astana (1,158 places, mixed Cyrillic + Latin) and built to be
 > probed for **entity resolution**, **eval discipline**, and **confidence
 > calibration**. Spec: `docs/voygr_replica.md`.
@@ -221,7 +221,7 @@ would come from VOYGR's actual ingestion pipeline.
 
 ## §5 — Roadmap
 
-This replica demonstrates architecture on a small footprint. Production
+This project demonstrates architecture on a small footprint. Production
 work for a real place-intelligence pipeline would add:
 
 1. **Multi-source ingestion** beyond OSM. 2GIS for Kazakhstan, Yandex for

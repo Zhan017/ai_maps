@@ -43,7 +43,7 @@ async def lifespan(app: FastAPI):
         app.state.pool.close()
 
 
-app = FastAPI(lifespan=lifespan, title="VOYGR Replica")
+app = FastAPI(lifespan=lifespan, title="Pet project inspired by VOYGR")
 
 app.add_middleware(
     CORSMiddleware,
